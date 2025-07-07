@@ -17,13 +17,21 @@ export default function PatentPlatform() {
   const [certificate, setCertificate] = useState(null);
   const [showLanguages, setShowLanguages] = useState(false);
 
-  const typography = {}; // Move your typography object here
-  const categories = []; // Move your categories array here
-  const wallets = []; // Move your wallets array here
+  const typography = {}; // TODO: Define typography object
+  const categories = []; // TODO: Define categories array
+  const wallets = [];    // TODO: Define wallets array
 
-  const handleSubmitIdea = () => {}; // Move your function here
-  const handleWalletConnect = (walletId) => {};
-  const handleSecureProof = () => {};
+  const handleSubmitIdea = () => {
+    // TODO: Implement idea submission logic
+  };
+
+  const handleWalletConnect = (walletId) => {
+    // TODO: Implement wallet connection logic
+  };
+
+  const handleSecureProof = () => {
+    // TODO: Implement secure proof logic
+  };
 
   return (
     <div className="min-h-screen font-['Rubik'] bg-[#191919]" style={{ backgroundColor: '#191919' }}>
