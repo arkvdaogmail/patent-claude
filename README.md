@@ -1,4 +1,4 @@
-# Patent Claude
+## Patent Claude
 
 Patent Claude is a collection of JavaScript React component files.
 
