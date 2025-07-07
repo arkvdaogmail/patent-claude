@@ -1,0 +1,24 @@
+{
+  "name": "patent-claude",
+  "version": "1.0.0",
+  "description": "Patent Claude is a collection of JavaScript React component files, now set up as a Next.js project.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "keywords": [
+    "nextjs",
+    "react",
+    "vercel",
+    "patent-claude"
+  ],
+  "author": "arkvdaogmail",
+  "license": "MIT",
+  "dependencies": {
+    "next": "^14.2.3",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  }
+}
