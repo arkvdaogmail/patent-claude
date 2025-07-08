@@ -23,6 +23,17 @@ export default function App() {
   const [certificate, setCertificate] = useState(null);
   const [showLanguages, setShowLanguages] = useState(false);
 
+  // Reset all state for new protection flow
+  const startNewProtectionProcess = () => {
+    setWalletConnected(false);
+    setConnectedWallet("");
+    setConnectedAddress("");
+    setCertificate(null);
+    setIdeaDescription("");
+    setSelectedCategory("");
+    setCurrentSection("submit");
+  };
+
   const typography = {
     headline: "text-[32px] leading-[1.25] font-medium",
     title: "text-[20px] leading-[1.2] font-medium",
@@ -43,10 +54,8 @@ export default function App() {
   ];
 
   const wallets = [
-    { id: "walletconnect", name: "WalletConnect", icon: "🔗" },
     { id: "sync2", name: "Sync2", icon: "🔄" },
-    { id: "veworld", name: "VeWorld", icon: "🌍" },
-    { id: "ledger", name: "Ledger", icon: "🔐" }
+    { id: "veworld", name: "VeWorld", icon: "🌍" }
   ];
 
   // Wallet connect logic (Sync2/VeWorld)
@@ -96,16 +105,10 @@ export default function App() {
   }
 
   // Step 1: Submit Idea
-  const handleSubmitIdea = () => {
-    if (!selectedCategory || !ideaDescription.trim()) {
-      alert("Please select a category and describe your idea");
-      return;
-    }
-    setCurrentSection("wallet");
-  };
+  const canProceedToWallet = selectedCategory && ideaDescription.trim();
 
-  // Step 2: Secure Proof (after wallet connect)
-  const handleSecureProof = async () => {
+  // Step 2: Pay & Protect (after wallet connect)
+  const handlePayAndProtect = async () => {
     if (!walletConnected || !connectedAddress) {
       alert("Connect your wallet first!");
       return;
@@ -195,7 +198,7 @@ export default function App() {
               Home
             </button>
             <button
-              onClick={() => setCurrentSection("submit")}
+              onClick={startNewProtectionProcess}
               className={`px-6 py-3 rounded-[32px] transition-all ${typography.baseM} ${
                 currentSection === "submit" ? "bg-blue-500 text-white" : "text-gray-300 hover:text-white hover:bg-white/10"
               }`}
@@ -235,7 +238,7 @@ export default function App() {
                 Blockchain-certified timestamps accepted globally. Court-admissible proof of creation in minutes, not years.
               </p>
               <button
-                onClick={() => setCurrentSection("submit")}
+                onClick={startNewProtectionProcess}
                 className={`bg-gradient-to-r from-blue-500 to-purple-600 text-white ${typography.baseM} py-4 px-8 rounded-[32px] hover:from-blue-600 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105`}
               >
                 Start Protecting Your Idea
@@ -342,81 +345,47 @@ export default function App() {
                     We create cryptographic proof of creation date. Not a patent, but solid proof your idea came first.
                   </p>
                 </div>
-                <button
-                  onClick={handleSubmitIdea}
-                  className={`w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white ${typography.baseM} py-4 px-6 rounded-[32px] hover:from-blue-600 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02]`}
-                >
-                  Start Protection Process
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* WALLET CONNECTION SECTION */}
-        {currentSection === "wallet" && (
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-black/20 backdrop-blur-lg rounded-[32px] border border-white/10 p-8">
-              <h2 className={`${typography.title} text-white mb-6 flex items-center gap-2`}>
-                <Wallet className="w-6 h-6 text-green-400" />
-                WALLET CONNECTION STEP - Choose Your Wallet
-              </h2>
-              <div className="bg-blue-500/20 border border-blue-500/30 rounded-[32px] p-4 mb-6">
-                <p className={`text-blue-300 ${typography.body}`}>
-                  📱 This is the wallet connection section. Choose one of the 4 wallets below:
-                </p>
-              </div>
-              {!walletConnected ? (
-                <div>
-                  <p className={`text-gray-300 mb-6 ${typography.body}`}>Choose your wallet to securely verify your identity:</p>
-                  <div className="grid md:grid-cols-2 gap-4 mb-6">
-                    {wallets.map(wallet => (
-                      <button
-                        key={wallet.id}
-                        onClick={() => handleWalletConnect(wallet.id)}
-                        disabled={isProcessing}
-                        className={`flex items-center gap-3 bg-white/5 border border-white/10 rounded-[32px] px-6 py-4 text-white hover:bg-white/10 transition-all disabled:opacity-50 ${typography.baseM}`}
-                      >
-                        <span className="text-2xl">{wallet.icon}</span>
-                        <span>{wallet.name}</span>
-                        <span className={`text-green-400 ${typography.base2}`}>← Click to connect</span>
-                      </button>
-                    ))}
+                {/* Wallet Connect Section */}
+                <div className="mt-8">
+                  <div className="mb-4">
+                    <h3 className={`text-white ${typography.title} mb-2 flex items-center gap-2`}>
+                      <Wallet className="w-5 h-5 text-green-400" />
+                      Connect Your Wallet
+                    </h3>
+                    {!walletConnected ? (
+                      <div className="flex gap-4">
+                        {wallets.map(wallet => (
+                          <button
+                            key={wallet.id}
+                            onClick={() => handleWalletConnect(wallet.id)}
+                            disabled={!canProceedToWallet || isProcessing}
+                            className={`flex items-center gap-2 bg-white/5 border border-white/10 rounded-[32px] px-6 py-3 text-white hover:bg-white/10 transition-all disabled:opacity-50 ${typography.baseM}`}
+                          >
+                            <span className="text-2xl">{wallet.icon}</span>
+                            <span>{wallet.name}</span>
+                          </button>
+                        ))}
+                        {isProcessing && (
+                          <span className="text-blue-400 ml-4 self-center">Connecting...</span>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-green-400">
+                        <CheckCircle className="w-5 h-5" />
+                        Wallet Connected: {connectedWallet} ({connectedAddress.slice(0, 8)}...{connectedAddress.slice(-4)})
+                      </div>
+                    )}
                   </div>
-                  {isProcessing && (
-                    <div className="text-center">
-                      <p className={`text-blue-300 ${typography.body}`}>🔄 Connecting wallet... (takes &lt;10 seconds)</p>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div>
-                  <div className="bg-green-500/10 border border-green-500/30 rounded-[32px] p-4 mb-6">
-                    <p className={`text-green-300 ${typography.body}`}>✅ Wallet connected successfully! ({connectedWallet})</p>
-                  </div>
-                  <div className="bg-white/5 border border-white/10 rounded-[32px] p-6 mb-6">
-                    <h3 className={`text-white ${typography.title} mb-4`}>Protection Summary</h3>
-                    <div className={`space-y-2 text-gray-300 ${typography.body}`}>
-                      <p>
-                        <strong>Category:</strong> {categories.find(c => c.value === selectedCategory)?.label}
-                      </p>
-                      <p>
-                        <strong>Description:</strong> {ideaDescription.slice(0, 100)}...
-                      </p>
-                      <p>
-                        <strong>Total Cost:</strong> $15 - all fees included
-                      </p>
-                    </div>
-                  </div>
+                  {/* Pay & Protect Button */}
                   <button
-                    onClick={handleSecureProof}
-                    disabled={isProcessing}
-                    className={`w-full bg-gradient-to-r from-green-500 to-teal-600 text-white ${typography.baseM} py-4 px-6 rounded-[32px] hover:from-green-600 hover:to-teal-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] disabled:opacity-50`}
+                    onClick={handlePayAndProtect}
+                    disabled={!canProceedToWallet || !walletConnected || isProcessing}
+                    className={`mt-6 w-full bg-gradient-to-r from-green-500 to-teal-600 text-white ${typography.baseM} py-4 px-6 rounded-[32px] hover:from-green-600 hover:to-teal-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] disabled:opacity-50`}
                   >
-                    {isProcessing ? "🔄 Creating unforgeable blockchain proof..." : "🔒 Secure My Proof ($15)"}
+                    {isProcessing ? "🔄 Processing on Blockchain..." : "Pay & Protect My Idea ($15)"}
                   </button>
                 </div>
-              )}
+              </div>
             </div>
           </div>
         )}
@@ -505,7 +474,7 @@ export default function App() {
                     <div className="text-center py-12">
                       <p className={`text-gray-400 mb-4 ${typography.body}`}>No certificates yet</p>
                       <button
-                        onClick={() => setCurrentSection("submit")}
+                        onClick={startNewProtectionProcess}
                         className={`bg-blue-500 text-white px-6 py-3 rounded-[32px] hover:bg-blue-600 transition-all ${typography.baseM}`}
                       >
                         Protect Your First Idea
