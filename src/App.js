@@ -1,3 +1,11 @@
+// ...other imports
+import Header from "./Header";
+
+// ...inside your component's return:
+<>
+  <Header />
+  {/* ...rest of your app as before */}
+</>
 import React, { useState } from "react";
 import { useConnex, useWallet, WalletProvider } from "@vechain/vechain-kit-react";
 import { sha256 } from "js-sha256";
