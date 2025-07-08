@@ -1,7 +1,7 @@
 {
   "name": "patent-claude",
   "version": "1.0.0",
-  "description": "Patent Claude is a collection of JavaScript React component files, now set up as a Next.js project.",
+  "description": "Patent Claude is a collection of JavaScript React component files, now set up as a Next.js app.",
   "main": "index.js",
   "scripts": {
     "dev": "next dev",
@@ -17,8 +17,9 @@
   "author": "arkvdaogmail",
   "license": "MIT",
   "dependencies": {
-    "next": "^14.2.3",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "next": "14.2.4",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "lucide-react": "^0.373.0"
   }
 }
