@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Hash, Shield, CheckCircle, Globe, Bot, Wallet, Copy, Download, Search, ChevronDown } from 'lucide-react';
 
-function App() {
+export default function App() {
   const [currentSection, setCurrentSection] = useState('home');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [ideaDescription, setIdeaDescription] = useState('');
@@ -13,14 +13,14 @@ function App() {
 
   // Your Design System Typography
   const typography = {
-    headline: "text-[32px] leading-[1.25] font-medium",
-    title: "text-[20px] leading-[1.2] font-medium",     
-    body: "text-[16px] leading-[1.5]",                  
-    baseM: "text-[16px] leading-[1.5] font-medium",     
-    base2: "text-[14px] leading-[1.43]",                
-    base2M: "text-[14px] leading-[1.43] font-semibold", 
-    caption: "text-[12px] leading-[1.33]",              
-    captionM: "text-[12px] leading-[1.33] font-semibold"
+    headline: "text-[32px] leading-[1.25] font-medium", // bento-headline
+    title: "text-[20px] leading-[1.2] font-medium",     // bento-title  
+    body: "text-[16px] leading-[1.5]",                  // bento-body
+    baseM: "text-[16px] leading-[1.5] font-medium",     // bento-base-m
+    base2: "text-[14px] leading-[1.43]",                // bento-base2-r
+    base2M: "text-[14px] leading-[1.43] font-semibold", // bento-base2-sm
+    caption: "text-[12px] leading-[1.33]",              // bento-caption-r
+    captionM: "text-[12px] leading-[1.33] font-semibold" // bento-caption-sm
   };
 
   const categories = [
@@ -43,6 +43,7 @@ function App() {
       alert('Please select a category and describe your idea');
       return;
     }
+    console.log('Moving to wallet section...'); // Debug log
     setCurrentSection('wallet');
   };
 
@@ -73,7 +74,7 @@ function App() {
 
   return (
     <div className="min-h-screen font-['Rubik']" style={{ backgroundColor: '#191919' }}>
-      {/* Language Dropdown */}
+      {/* Language Dropdown - Top Right */}
       <div className="absolute top-4 right-4 z-50">
         <div className="relative">
           <button
@@ -141,6 +142,7 @@ function App() {
         {/* HOME SECTION */}
         {currentSection === 'home' && (
           <div className="text-center">
+            {/* Hero */}
             <div className="mb-12">
               <h1 className={`${typography.headline} text-white mb-6`} style={{ fontSize: '48px' }}>
                 Turn Your Ideas Into Unforgeable Proof
@@ -205,6 +207,9 @@ function App() {
                   </div>
                 </div>
               </div>
+              <p className={`text-gray-300 text-center mt-6 italic ${typography.body}`}>
+                "While others promise patent-level protection they can't deliver, we give you exactly what blockchain does best: unforgeable proof of creation that lasts forever."
+              </p>
             </div>
           </div>
         )}
@@ -279,8 +284,14 @@ function App() {
             <div className="bg-black/20 backdrop-blur-lg rounded-[32px] border border-white/10 p-8">
               <h2 className={`${typography.title} text-white mb-6 flex items-center gap-2`}>
                 <Wallet className="w-6 h-6 text-green-400" />
-                Secure Your Protection
+                🔗 WALLET CONNECTION STEP - Choose Your Wallet
               </h2>
+              
+              <div className="bg-blue-500/20 border border-blue-500/30 rounded-[32px] p-4 mb-6">
+                <p className={`text-blue-300 ${typography.body}`}>
+                  📱 This is the wallet connection section. Choose one of the 4 wallets below:
+                </p>
+              </div>
 
               {!walletConnected ? (
                 <div>
@@ -295,19 +306,20 @@ function App() {
                       >
                         <span className="text-2xl">{wallet.icon}</span>
                         <span>{wallet.name}</span>
+                        <span className={`text-green-400 ${typography.base2}`}>← Click to connect</span>
                       </button>
                     ))}
                   </div>
                   {isProcessing && (
                     <div className="text-center">
-                      <p className={`text-blue-300 ${typography.body}`}>Establishing secure link... (takes less than 10 seconds)</p>
+                      <p className={`text-blue-300 ${typography.body}`}>🔄 Connecting wallet... (takes &lt;10 seconds)</p>
                     </div>
                   )}
                 </div>
               ) : (
                 <div>
                   <div className="bg-green-500/10 border border-green-500/30 rounded-[32px] p-4 mb-6">
-                    <p className={`text-green-300 ${typography.body}`}>Wallet connected successfully!</p>
+                    <p className={`text-green-300 ${typography.body}`}>✅ Wallet connected successfully! ({connectedWallet})</p>
                   </div>
                   
                   <div className="bg-white/5 border border-white/10 rounded-[32px] p-6 mb-6">
@@ -324,7 +336,7 @@ function App() {
                     disabled={isProcessing}
                     className={`w-full bg-gradient-to-r from-green-500 to-teal-600 text-white ${typography.baseM} py-4 px-6 rounded-[32px] hover:from-green-600 hover:to-teal-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] disabled:opacity-50`}
                   >
-                    {isProcessing ? 'Creating unforgeable blockchain proof...' : 'Secure My Proof ($15)'}
+                    {isProcessing ? '🔄 Creating unforgeable blockchain proof...' : '🔒 Secure My Proof ($15)'}
                   </button>
                 </div>
               )}
@@ -441,5 +453,4 @@ function App() {
     </div>
   );
 }
-
 export default App;
