@@ -418,7 +418,7 @@ function PatentClaudeApp() {
 // Wrap with WalletProvider at the root
 export default function App() {
   return (
-    <WalletProvider testnet={false}>
+    <WalletProvider testnet={true}>
       <PatentClaudeApp />
     </WalletProvider>
   );
