@@ -420,7 +420,11 @@ export default function App() {
   return (
     <WalletProvider testnet={true}>
       <PatentClaudeApp />
+    // Wrap with WalletProvider at the root
+export default function App() {
+  return (
+    <WalletProvider testnet={true}>
+      <PatentClaudeApp />
     </WalletProvider>
   );
 }
-
