@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useConnex, useWallet, WalletProvider } from "@vechain/vechain-kit-react";
 import { sha256 } from "js-sha256"; // Ensure this is installed: npm install js-sha256
+import { loadStripe } from '@stripe/stripe-js'; // NEW IMPORT FOR STRIPE
 import {
   Hash,
   CheckCircle,
@@ -123,18 +124,53 @@ function PatentClaudeApp() {
       const doubleHash = sha256(firstHash + wallet.address);
       // END MODIFIED HASH LOGIC
 
-      // Send transaction (data is 0x + doubleHash)
-      const to = wallet.address;
-      const value = "0"; // This should be 0 if the backend relayer pays gas
-      const data = "0x" + doubleHash;
+      // Step A: Initiate Stripe Checkout (This replaces the direct blockchain call for now)
+      const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY); // Your public key
 
+      const response = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          priceId: 'price_1Rl0vSF31XjIKGr0jns601O2', // <<< CORRECTED STRIPE PRICE ID
+          successUrl: `${window.location.origin}/certificate?session_id={CHECKOUT_SESSION_ID}`, // Adjust success/cancel URLs as needed
+          cancelUrl: `${window.location.origin}/submit`,
+          // Optional: You might pass through data about the notarization (e.g., wallet address, hash)
+          // metadata: {
+          //   walletAddress: wallet.address,
+          //   shaHash: doubleHash, // Pass doubleHash
+          //   description: uploadedFile ? `File: ${uploadedFile.name}` : ideaDescription,
+          //   category: selectedCategory
+          // },
+        }),
+      });
+
+      const session = await response.json();
+
+      if (response.ok) {
+        // Redirect to Stripe Checkout
+        const result = await stripe.redirectToCheckout({
+          sessionId: session.sessionId,
+        });
+
+        if (result.error) {
+          alert(result.error.message);
+        }
+      } else {
+        alert('Failed to initiate payment: ' + (session.details || 'Unknown error'));
+      }
+
+      // IMPORTANT: The actual blockchain notarization (Step B) will happen AFTER payment confirmation (via Stripe Webhook)
+      // For initial testing, we're just getting you to the Stripe page.
+      // Full integration requires a Stripe Webhook to confirm payment before notarizing on blockchain.
+
+      // Old blockchain notarization code (will be moved to Stripe Webhook handler later):
+      /*
       const txSigningService = connex.vendor.sign("tx");
       txSigningService.addClause({ to, value, data });
       txSigningService.comment("PatentClaude Proof of idea");
 
       const output = await txSigningService.request();
       if (output && output.txID) {
-        // Here you would also call your new /api/storeProof.js to save to Supabase
         const storeProofResponse = await fetch('/api/storeProof', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -143,7 +179,7 @@ function PatentClaudeApp() {
             shaHash: doubleHash,
             timestamp: new Date().toISOString(),
             address: wallet.address,
-            description: uploadedFile ? `File: ${uploadedFile.name}` : ideaDescription, // Store file name or description
+            description: uploadedFile ? `File: ${uploadedFile.name}` : ideaDescription,
             category: selectedCategory
           })
         });
@@ -152,7 +188,6 @@ function PatentClaudeApp() {
         if (!storeProofResponse.ok) {
           console.error('Failed to store proof in Supabase:', storeProofResult.details);
           alert('Proof recorded on blockchain, but failed to save to your certificates: ' + (storeProofResult.details || 'Unknown error.'));
-          // You might still show the certificate if blockchain part succeeded
         } else {
           console.log('Proof stored in Supabase:', storeProofResult);
         }
@@ -162,15 +197,16 @@ function PatentClaudeApp() {
           shaHash: doubleHash,
           timestamp: new Date().toISOString(),
           address: wallet.address,
-          description: uploadedFile ? `File: ${uploadedFile.name}` : ideaDescription, // Use file name or description
+          description: uploadedFile ? `File: ${uploadedFile.name}` : ideaDescription,
           category: selectedCategory
         });
         setCurrentSection("certificate");
       } else {
         alert("Blockchain transaction failed.");
       }
+      */
     } catch (err) {
-      alert("Error sending proof: " + (err?.message || err));
+      alert("Error during payment initiation: " + (err?.message || err));
     }
     setIsProcessing(false);
   }
@@ -500,4 +536,78 @@ function PatentClaudeApp() {
             <div className="bg-black/20 backdrop-blur-lg rounded-[32px] border border-white/10 p-8">
               <h2 className={`${typography.title} text-white mb-6 flex items-center gap-2`}>
                 <Search className="w-6 h-6 text-purple-400" />
-                {currentSection === "certificates" ? "My
+                {currentSection === "certificates" ? "My Certificates" : "Verify Proof"}
+              </h2>
+              {currentSection === "certificates" ? (
+                <div>
+                  {/* You'll likely need a state variable like 'myCertificatesList' to store and map these */}
+                  {/* For now, this will just show the last 'certificate' if any, after a successful notarization */}
+                  {certificate ? ( // This needs to be replaced with a proper list mapping from fetchMyCertificates
+                    <div className="bg-white/5 border border-white/10 rounded-[32px] p-6">
+                      <h3 className={`text-white ${typography.title} mb-2`}>{certificate.description.slice(0, 50) + "..."}</h3>
+                      <p className={`text-gray-300 ${typography.base2} mb-2`}>Category: {categories.find(c => c.value === certificate.category)?.label}</p>
+                      <p className={`text-gray-400 ${typography.caption}`}>Protected: {new Date(certificate.timestamp).toLocaleDateString()}</p>
+                      <p className={`text-gray-400 ${typography.caption}`}>TxID: {certificate.vechainHash.slice(0,10)}...</p> {/* Display some info */}
+                      <p className={`text-gray-400 ${typography.caption}`}>SHA: {certificate.shaHash.slice(0,10)}...</p> {/* Display some info */}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <p className={`text-gray-400 mb-4 ${typography.body}`}>No certificates yet</p>
+                      <button
+                        onClick={startNewProtectionProcess}
+                        className={`bg-blue-500 text-white px-6 py-3 rounded-[32px] hover:bg-blue-600 transition-all ${typography.baseM}`}
+                      >
+                        Protect Your First Idea
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* VERIFY PROOF INPUTS */}
+                  <div>
+                    <label className={`block text-gray-300 ${typography.baseM} mb-2`}>Enter Original Content (or re-upload file)</label>
+                    <textarea
+                      // You'll need state for this input: const [verifyContent, setVerifyContent] = useState("");
+                      // value={verifyContent}
+                      // onChange={(e) => setVerifyContent(e.target.value)}
+                      placeholder="Re-enter your exact original innovation description or the content of the file..."
+                      className={`w-full h-32 bg-white/5 border border-white/10 rounded-[32px] px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 ${typography.body}`}
+                    />
+                  </div>
+                  <div>
+                    <label className={`block text-gray-300 ${typography.baseM} mb-2`}>Enter VeChain Transaction ID (Optional)</label>
+                    <input
+                      type="text"
+                      // You'll need state for this input: const [verifyTxId, setVerifyTxId] = useState("");
+                      // value={verifyTxId}
+                      // onChange={(e) => setVerifyTxId(e.target.value)}
+                      placeholder="Enter the VeChain transaction ID if known..."
+                      className={`w-full px-4 py-3 bg-white/5 border border-white/10 rounded-[32px] text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 ${typography.body}`}
+                    />
+                  </div>
+                  <button
+                    // onClick={() => handleVerifyProof(verifyContent, verifyTxId)} // Link to your verify function
+                    className={`w-full bg-gradient-to-r from-purple-500 to-pink-600 text-white ${typography.baseM} py-4 px-6 rounded-[32px] hover:from-purple-600 hover:to-pink-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02]`}
+                  >
+                    Verify Proof
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Wrap with WalletProvider at the root
+export default function App() {
+  return (
+    // CHANGED TO TESTNET=TRUE
+    <WalletProvider testnet={true}>
+      <PatentClaudeApp />
+    </WalletProvider>
+  );
+}
