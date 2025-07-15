@@ -1,4 +1,4 @@
-Console.log('--- The notarize.js file was called! ---'); // Your test line is in the right place.
+console.log('--- The notarize.js file was called! ---'); // Your test line is in the right place.
 
 import { Driver, SimpleWallet } from 'thor-devkit';
 

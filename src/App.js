@@ -69,9 +69,9 @@ function PatentClaudeApp() {
         reader.onload = async (e) => {
           const arrayBuffer = e.target.result;
           const fileUint8Array = new Uint8Array(arrayBuffer);
-          const fileContentString = String.fromCharCode.apply(null, fileUint8Array); 
-
-          const hash = sha256(fileContentString);
+          
+          // Direct binary hashing - more secure and handles large files
+          const hash = sha256(fileUint8Array);
           setFileHash(hash);
           // setStatus("File hash generated."); // Update status
           setIsProcessing(false);
@@ -105,7 +105,7 @@ function PatentClaudeApp() {
   }
 
   // Step 3: Pay & Protect
-  priceId: 'price_1Rl0vSF31XjIKGr0jns601O2',
+  async function handlePayAndProtect() {
     if (!wallet || !wallet.address) {
       alert("Connect your wallet first!");
       return;
