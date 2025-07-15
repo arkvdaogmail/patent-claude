@@ -12,5 +12,20 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          stripe: ['@stripe/react-stripe-js', '@stripe/stripe-js']
+        }
+      }
+    }
+  },
+  define: {
+    global: 'globalThis',
+    'process.env': {}
+  },
+  optimizeDeps: {
+    exclude: ['@walletconnect/web3-provider']
   }
 })

@@ -6,19 +6,44 @@ import PaymentArea from './components/PaymentArea'
 function App() {
   const [health, setHealth] = useState(null)
   const [uploadedFiles, setUploadedFiles] = useState([])
+  const [error, setError] = useState(null)
 
   useEffect(() => {
-    // Test the API connection
+    // Test the API connection with error handling
     fetch('/api/health')
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) {
+          throw new Error('API not available')
+        }
+        return res.json()
+      })
       .then(data => setHealth(data))
-      .catch(err => console.error('API connection failed:', err))
+      .catch(err => {
+        console.error('API connection failed:', err)
+        setError('API connection failed - running in frontend-only mode')
+      })
   }, [])
 
   const handleFileUpload = (fileInfo) => {
     console.log('File uploaded:', fileInfo)
     setUploadedFiles(prev => [...prev, fileInfo])
-    // Here you could send the file to your server
+  }
+
+  if (error) {
+    return (
+      <div className="App">
+        <header className="App-header">
+          <h1>🦉 Owl App</h1>
+          <p>Welcome to your React + Vite application!</p>
+          
+          <div className="error-card">
+            <h3>⚠️ Backend Not Available</h3>
+            <p>{error}</p>
+            <p>The frontend is working! Deploy to Vercel to enable full functionality.</p>
+          </div>
+        </header>
+      </div>
+    )
   }
 
   return (
@@ -39,20 +64,6 @@ function App() {
             </div>
           )}
         </div>
-
-        <div className="next-steps">
-          <h3>Next Steps:</h3>
-          <ul>
-            <li>✅ Basic Express server running</li>
-            <li>✅ React frontend connected</li>
-            <li>✅ File upload functionality added</li>
-            <li>✅ Stripe payment integration</li>
-            <li>✅ Wallet connect (MetaMask, WalletConnect)</li>
-            <li>🔧 Set up Supabase integration</li>
-            <li>🔧 Add your business logic</li>
-            <li>🧪 Write tests for your features</li>
-          </ul>
-        </div>
       </header>
 
       <div className="file-upload-section">
@@ -62,7 +73,7 @@ function App() {
         {uploadedFiles.length > 0 && (
           <div className="upload-summary">
             <h3>Total Files Uploaded: {uploadedFiles.length}</h3>
-            <p>Files are ready for processing with VeChain or Supabase!</p>
+            <p>Files are ready for processing!</p>
           </div>
         )}
       </div>
