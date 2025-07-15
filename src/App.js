@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useConnex, useWallet, WalletProvider } from "@vechain/vechain-kit-react";
 import { sha256 } from "js-sha256"; // Ensure this is installed: npm install js-sha256
@@ -417,4 +418,197 @@ function PatentClaudeApp() {
                     </p>
                   )}
                   {fileHash && (
-                    <div className="
+                    <div className="mt-2 p-3 bg-white/10 border border-white/20 rounded-[16px] break-words">
+                      <p className={`text-green-300 ${typography.base2M}`}>Instant SHA-256 Hash:</p>
+                      <p className={`text-white font-mono ${typography.base2}`}>{fileHash}</p>
+                    </div>
+                  )}
+                  <p className={`${typography.caption} text-gray-400 mt-2`}>
+                    We create cryptographic proof of creation date by hashing your file content. Your file is **not uploaded**, only its cryptographic hash is used.
+                  </p>
+                </div>
+                {/* END REPLACED */}
+                {/* Wallet Connect Section */}
+                <div className="mt-8">
+                  <div className="mb-4">
+                    <h3 className={`text-white ${typography.title} mb-2 flex items-center gap-2`}>
+                      <Wallet className="w-5 h-5 text-green-400" />
+                      Connect Your Wallet
+                    </h3>
+                    {!wallet ? (
+                      <button
+                        onClick={handleWalletConnect}
+                        disabled={!canProceedToWallet || isConnecting || isProcessing}
+                        className={`flex items-center gap-2 bg-white/5 border border-white/10 rounded-[32px] px-6 py-3 text-white hover:bg-white/10 transition-all disabled:opacity-50 ${typography.baseM}`}
+                      >
+                        {isConnecting ? "Connecting..." : "Connect Wallet"}
+                      </button>
+                    ) : (
+                      <div className="flex items-center gap-2 text-green-400">
+                        <CheckCircle className="w-5 h-5" />
+                        Wallet Connected: {wallet.address.slice(0, 8)}...{wallet.address.slice(-4)}
+                        <button className="text-gray-300 underline ml-2" onClick={disconnect}>Disconnect</button>
+                      </div>
+                    )}
+                  </div>
+                  {/* Pay & Protect Button */}
+                  <button
+                    onClick={handlePayAndProtect}
+                    disabled={!canProceedToWallet || !wallet || isProcessing}
+                    className={`mt-6 w-full bg-gradient-to-r from-green-500 to-teal-600 text-white ${typography.baseM} py-4 px-6 rounded-[32px] hover:from-green-600 hover:to-teal-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] disabled:opacity-50`}
+                  >
+                    {isProcessing && wallet
+                      ? "🔄 Processing on Blockchain..."
+                      : "Pay & Protect My Idea ($15)"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* CERTIFICATE DISPLAY */}
+        {currentSection === "certificate" && certificate && (
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-black/20 backdrop-blur-lg rounded-[32px] border border-white/10 p-8">
+              <h2 className={`${typography.title} text-white mb-6 flex items-center gap-2`}>
+                <CheckCircle className="w-6 h-6 text-green-400" />
+                Your Idea is Protected!
+              </h2>
+              <div className="bg-green-500/10 border border-green-500/30 rounded-[32px] p-6 mb-6">
+                <p className={`text-green-300 ${typography.body} mb-4`}>
+                  Congratulations! Your innovation has been timestamped on the blockchain with unforgeable proof.
+                </p>
+              </div>
+              <div className="space-y-4 mb-6">
+                <div className="bg-white/5 border border-white/10 rounded-[32px] p-4">
+                  <div className="flex items-center justify-between">
+                    <span className={`text-gray-300 ${typography.baseM}`}>VeChain Hash ID:</span>
+                    <button onClick={() => navigator.clipboard.writeText(certificate.vechainHash)} className="text-blue-400 hover:text-blue-300">
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <p className={`text-white font-mono ${typography.base2} mt-1`}>{certificate.vechainHash}</p>
+                </div>
+                <div className="bg-white/5 border border-white/10 rounded-[32px] p-4">
+                  <div className="flex items-center justify-between">
+                    <span className={`text-gray-300 ${typography.baseM}`}>SHA-Hash ID:</span>
+                    <button onClick={() => navigator.clipboard.writeText(certificate.shaHash)} className="text-blue-400 hover:text-blue-300">
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <p className={`text-white font-mono ${typography.base2} mt-1`}>{certificate.shaHash}</p>
+                </div>
+                <div className="bg-white/5 border border-white/10 rounded-[32px] p-4">
+                  <span className={`text-gray-300 ${typography.baseM}`}>Timestamp:</span>
+                  <p className={`text-white ${typography.base2} mt-1`}>{new Date(certificate.timestamp).toLocaleString()}</p>
+                </div>
+                <div className="bg-white/5 border border-white/10 rounded-[32px] p-4">
+                  <span className={`text-gray-300 ${typography.baseM}`}>Wallet Address:</span>
+                  <p className={`text-white font-mono ${typography.base2} mt-1`}>{certificate.address}</p>
+                </div>
+                <div className="bg-white/5 border border-white/10 rounded-[32px] p-4">
+                  <span className={`text-gray-300 ${typography.baseM}`}>Description:</span>
+                  <p className={`text-white ${typography.base2} mt-1`}>{certificate.description}</p>
+                </div>
+              </div>
+              <div className="flex gap-4 mt-6">
+                <button
+                  onClick={handleDownload}
+                  className={`flex items-center gap-2 bg-blue-500 text-white px-6 py-3 rounded-[32px] hover:bg-blue-600 transition-all ${typography.baseM}`}
+                >
+                  <Download className="w-4 h-4" />
+                  Download Certificate
+                </button>
+                <button
+                  onClick={() => setCurrentSection("certificates")}
+                  className={`bg-white/10 text-white px-6 py-3 rounded-[32px] hover:bg-white/20 transition-all ${typography.baseM}`}
+                >
+                  View My Certificates
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MY CERTIFICATES & VERIFY PROOF */}
+        {(currentSection === "certificates" || currentSection === "verify") && (
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-black/20 backdrop-blur-lg rounded-[32px] border border-white/10 p-8">
+              <h2 className={`${typography.title} text-white mb-6 flex items-center gap-2`}>
+                <Search className="w-6 h-6 text-purple-400" />
+                {currentSection === "certificates" ? "My Certificates" : "Verify Proof"}
+              </h2>
+              {currentSection === "certificates" ? (
+                <div>
+                  {/* You'll likely need a state variable like 'myCertificatesList' to store and map these */}
+                  {/* For now, this will just show the last 'certificate' if any, after a successful notarization */}
+                  {certificate ? ( // This needs to be replaced with a proper list mapping from fetchMyCertificates
+                    <div className="bg-white/5 border border-white/10 rounded-[32px] p-6">
+                      <h3 className={`text-white ${typography.title} mb-2`}>{certificate.description.slice(0, 50) + "..."}</h3>
+                      <p className={`text-gray-300 ${typography.base2} mb-2`}>Category: {categories.find(c => c.value === certificate.category)?.label}</p>
+                      <p className={`text-gray-400 ${typography.caption}`}>Protected: {new Date(certificate.timestamp).toLocaleDateString()}</p>
+                      <p className={`text-gray-400 ${typography.caption}`}>TxID: {certificate.vechainHash.slice(0,10)}...</p> {/* Display some info */}
+                      <p className={`text-gray-400 ${typography.caption}`}>SHA: {certificate.shaHash.slice(0,10)}...</p> {/* Display some info */}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <p className={`text-gray-400 mb-4 ${typography.body}`}>No certificates yet</p>
+                      <button
+                        onClick={startNewProtectionProcess}
+                        className={`bg-blue-500 text-white px-6 py-3 rounded-[32px] hover:bg-blue-600 transition-all ${typography.baseM}`}
+                      >
+                        Protect Your First Idea
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* VERIFY PROOF INPUTS */}
+                  <div>
+                    <label className={`block text-gray-300 ${typography.baseM} mb-2`}>Enter Original Content (or re-upload file)</label>
+                    <textarea
+                      // You'll need state for this input: const [verifyContent, setVerifyContent] = useState("");
+                      // value={verifyContent}
+                      // onChange={(e) => setVerifyContent(e.target.value)}
+                      placeholder="Re-enter your exact original innovation description or the content of the file..."
+                      className={`w-full h-32 bg-white/5 border border-white/10 rounded-[32px] px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 ${typography.body}`}
+                    />
+                  </div>
+                  <div>
+                    <label className={`block text-gray-300 ${typography.baseM} mb-2`}>Enter VeChain Transaction ID (Optional)</label>
+                    <input
+                      type="text"
+                      // You'll need state for this input: const [verifyTxId, setVerifyTxId] = useState("");
+                      // value={verifyTxId}
+                      // onChange={(e) => setVerifyTxId(e.target.value)}
+                      placeholder="Enter the VeChain transaction ID if known..."
+                      className={`w-full px-4 py-3 bg-white/5 border border-white/10 rounded-[32px] text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 ${typography.body}`}
+                    />
+                  </div>
+                  <button
+                    // onClick={() => handleVerifyProof(verifyContent, verifyTxId)} // Link to your verify function
+                    className={`w-full bg-gradient-to-r from-purple-500 to-pink-600 text-white ${typography.baseM} py-4 px-6 rounded-[32px] hover:from-purple-600 hover:to-pink-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02]`}
+                  >
+                    Verify Proof
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Wrap with WalletProvider at the root
+export default function App() {
+  return (
+    // CHANGED TO TESTNET=TRUE
+    <WalletProvider testnet={true}>
+      <PatentClaudeApp />
+    </WalletProvider>
+  );
+}
