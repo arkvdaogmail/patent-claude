@@ -1,0 +1,55 @@
+.App {
+  text-align: center;
+  padding: 20px;
+}
+
+.App-header {
+  background-color: #282c34;
+  padding: 40px;
+  color: white;
+  border-radius: 10px;
+  margin: 20px 0;
+}
+
+.App-header h1 {
+  font-size: 3em;
+  margin-bottom: 10px;
+}
+
+.status-card {
+  background-color: #f8f9fa;
+  color: #333;
+  padding: 20px;
+  border-radius: 8px;
+  margin: 20px 0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.status-ok {
+  color: #28a745;
+  font-weight: bold;
+}
+
+.status-loading {
+  color: #ffc107;
+  font-weight: bold;
+}
+
+.next-steps {
+  background-color: #e9ecef;
+  color: #333;
+  padding: 20px;
+  border-radius: 8px;
+  margin: 20px 0;
+}
+
+.next-steps ul {
+  text-align: left;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.next-steps li {
+  margin: 10px 0;
+  padding: 5px 0;
+}
