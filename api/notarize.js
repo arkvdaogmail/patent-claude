@@ -20,7 +20,7 @@ export default async function handler(req, res) {
   
   // --- 2. Get Private Key (Temporary Hardcoded Method) ---
   // WARNING: For testing only. Remove before deploying.
-  const privateKey = "volcano cliff mercy buddy poem illegal jazz umbrella simple arrow egg october"; 
+  const privateKey = process.env.VET_PRIVATE_KEY;
   
   if (!privateKey || privateKey === " ") {
     console.error('Private key is not set correctly in the code.');
