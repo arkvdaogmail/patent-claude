@@ -1,14 +1,6 @@
-// ...other imports
-import Header from "./Header";
-
-// ...inside your component's return:
-<>
-  <Header />
-  {/* ...rest of your app as before */}
-</>
 import React, { useState } from "react";
 import { useConnex, useWallet, WalletProvider } from "@vechain/vechain-kit-react";
-import { sha256 } from "js-sha256";
+import { sha256 } from "js-sha256"; // Ensure this is installed: npm install js-sha256
 import {
   Hash,
   CheckCircle,
@@ -45,6 +37,10 @@ function PatentClaudeApp() {
   const [currentSection, setCurrentSection] = useState("home");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [ideaDescription, setIdeaDescription] = useState("");
+  // NEW STATE VARIABLES FOR FILE UPLOAD AND HASH
+  const [uploadedFile, setUploadedFile] = useState(null);
+  const [fileHash, setFileHash] = useState(""); // This will store the hash of the uploaded file
+  // END NEW STATE VARIABLES
   const [isProcessing, setIsProcessing] = useState(false);
   const [certificate, setCertificate] = useState(null);
   const [showLanguages, setShowLanguages] = useState(false);
@@ -53,8 +49,49 @@ function PatentClaudeApp() {
   const connex = useConnex();
   const { wallet, isConnecting, connect, disconnect } = useWallet();
 
-  // Step 1: Can proceed after idea & category
-  const canProceedToWallet = selectedCategory && ideaDescription.trim();
+  // Step 1: Can proceed after idea & category + (file OR description)
+  // MODIFIED canProceedToWallet
+  const canProceedToWallet = selectedCategory && (uploadedFile || ideaDescription.trim());
+  // END MODIFIED
+
+  // Function to handle file upload and hash generation
+  async function handleFileChange(event) {
+    const file = event.target.files[0];
+    if (file) {
+      setUploadedFile(file);
+      setIsProcessing(true); // Indicate processing for hashing
+      // setStatus("Generating file hash..."); // Uncomment if you have a general status display
+
+      try {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          const arrayBuffer = e.target.result;
+          const fileUint8Array = new Uint8Array(arrayBuffer);
+          const fileContentString = String.fromCharCode.apply(null, fileUint8Array); 
+
+          const hash = sha256(fileContentString);
+          setFileHash(hash);
+          // setStatus("File hash generated."); // Update status
+          setIsProcessing(false);
+        };
+        reader.onerror = (e) => {
+          console.error("FileReader error:", e);
+          // setStatus("Error reading file."); // Update status
+          setIsProcessing(false);
+        };
+        reader.readAsArrayBuffer(file); // Read file as ArrayBuffer for binary hashing
+      } catch (err) {
+        alert("Error processing file: " + (err?.message || err));
+        // setStatus("Error processing file."); // Update status
+        setIsProcessing(false);
+      }
+    } else {
+      setUploadedFile(null);
+      setFileHash("");
+      // setStatus(""); // Clear status
+    }
+  }
+
 
   // Step 2: Connect wallet
   async function handleWalletConnect() {
@@ -74,13 +111,21 @@ function PatentClaudeApp() {
     setIsProcessing(true);
 
     try {
-      // Double hash
-      const firstHash = sha256(ideaDescription);
+      // Double hash - use fileHash if available, otherwise fallback to ideaDescription
+      // MODIFIED HASH LOGIC
+      const contentToHash = fileHash || ideaDescription;
+      if (!contentToHash) {
+        alert("No file uploaded or description provided!");
+        setIsProcessing(false);
+        return;
+      }
+      const firstHash = sha256(contentToHash);
       const doubleHash = sha256(firstHash + wallet.address);
+      // END MODIFIED HASH LOGIC
 
       // Send transaction (data is 0x + doubleHash)
       const to = wallet.address;
-      const value = "0";
+      const value = "0"; // This should be 0 if the backend relayer pays gas
       const data = "0x" + doubleHash;
 
       const txSigningService = connex.vendor.sign("tx");
@@ -89,12 +134,35 @@ function PatentClaudeApp() {
 
       const output = await txSigningService.request();
       if (output && output.txID) {
+        // Here you would also call your new /api/storeProof.js to save to Supabase
+        const storeProofResponse = await fetch('/api/storeProof', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            vechainHash: output.txID,
+            shaHash: doubleHash,
+            timestamp: new Date().toISOString(),
+            address: wallet.address,
+            description: uploadedFile ? `File: ${uploadedFile.name}` : ideaDescription, // Store file name or description
+            category: selectedCategory
+          })
+        });
+
+        const storeProofResult = await storeProofResponse.json();
+        if (!storeProofResponse.ok) {
+          console.error('Failed to store proof in Supabase:', storeProofResult.details);
+          alert('Proof recorded on blockchain, but failed to save to your certificates: ' + (storeProofResult.details || 'Unknown error.'));
+          // You might still show the certificate if blockchain part succeeded
+        } else {
+          console.log('Proof stored in Supabase:', storeProofResult);
+        }
+
         setCertificate({
           vechainHash: output.txID,
           shaHash: doubleHash,
           timestamp: new Date().toISOString(),
           address: wallet.address,
-          description: ideaDescription,
+          description: uploadedFile ? `File: ${uploadedFile.name}` : ideaDescription, // Use file name or description
           category: selectedCategory
         });
         setCurrentSection("certificate");
@@ -111,6 +179,8 @@ function PatentClaudeApp() {
   function startNewProtectionProcess() {
     setCertificate(null);
     setIdeaDescription("");
+    setUploadedFile(null); // Clear uploaded file
+    setFileHash(""); // Clear file hash
     setSelectedCategory("");
     setCurrentSection("submit");
   }
@@ -137,6 +207,54 @@ function PatentClaudeApp() {
     a.click();
     window.URL.revokeObjectURL(url);
   }
+
+  // Function to fetch certificates for 'My Certificates' section
+  const fetchMyCertificates = async () => {
+    if (!wallet || !wallet.address) {
+      alert("Connect wallet to view certificates!");
+      return [];
+    }
+    try {
+      const response = await fetch(`/api/getProofs?walletAddress=${wallet.address}`);
+      const result = await response.json();
+      if (response.ok) {
+        // Update state to show these certificates (you'll need to define a state for this, e.g., 'myCertificates')
+        // For now, let's just log and update the 'certificate' state for demonstration
+        console.log("My Certificates:", result.data);
+        // setMyCertificates(result.data); // You'd typically set a list of certificates here
+        return result.data;
+      } else {
+        alert("Failed to fetch certificates: " + (result.details || "Unknown error"));
+        return [];
+      }
+    } catch (error) {
+      console.error("Error fetching certificates:", error);
+      alert("Error fetching certificates.");
+      return [];
+    }
+  };
+
+  // Function for 'Verify Proof'
+  const handleVerifyProof = async (contentToVerify, txIdToVerify) => {
+    // Re-hash content provided by user for verification
+    const rehashedContent = sha256(contentToVerify);
+    // Call getProofs API to check if this hash/txId exists
+    try {
+        const response = await fetch(`/api/getProofs?shaHash=${rehashedContent}&vechainTxid=${txIdToVerify}`);
+        const result = await response.json();
+        if (response.ok && result.data && result.data.length > 0) {
+            alert("Proof Verified! Matches existing record.");
+            console.log("Verified Proof:", result.data[0]);
+            // Display proof details on UI
+        } else {
+            alert("Proof Not Found or does not match.");
+        }
+    } catch (error) {
+        console.error("Verification error:", error);
+        alert("Error during verification.");
+    }
+  };
+
 
   return (
     <div className="min-h-screen font-['Rubik']" style={{ backgroundColor: "#191919" }}>
@@ -184,7 +302,7 @@ function PatentClaudeApp() {
               Protect Idea
             </button>
             <button
-              onClick={() => setCurrentSection("certificates")}
+              onClick={() => { setCurrentSection("certificates"); fetchMyCertificates(); }} // Fetch on click
               className={`px-6 py-3 rounded-[32px] transition-all ${typography.baseM} ${
                 currentSection === "certificates" ? "bg-green-500 text-white" : "text-gray-300 hover:text-white hover:bg-white/10"
               }`}
@@ -233,7 +351,6 @@ function PatentClaudeApp() {
                 <Hash className="w-6 h-6 text-blue-400" />
                 Protect Your Innovation
               </h2>
-              {/* ...Category, idea input... */}
               <div className="space-y-6">
                 <div>
                   <label className={`block text-gray-300 ${typography.baseM} mb-2`}>Innovation Category</label>
@@ -250,18 +367,30 @@ function PatentClaudeApp() {
                     ))}
                   </select>
                 </div>
+                {/* REPLACED TEXTAREA WITH FILE INPUT */}
                 <div>
-                  <label className={`block text-gray-300 ${typography.baseM} mb-2`}>Describe Your Innovation</label>
-                  <textarea
-                    value={ideaDescription}
-                    onChange={e => setIdeaDescription(e.target.value)}
-                    placeholder="Describe your idea in detail. Your content stays private during scanning..."
-                    className={`w-full h-32 bg-white/5 border border-white/10 rounded-[32px] px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 ${typography.body}`}
+                  <label className={`block text-gray-300 ${typography.baseM} mb-2`}>Upload File for Notarization</label>
+                  <input
+                    type="file"
+                    onChange={handleFileChange}
+                    className={`w-full bg-white/5 border border-white/10 rounded-[32px] px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${typography.body}`}
                   />
+                  {uploadedFile && (
+                    <p className={`${typography.caption} text-gray-400 mt-2`}>
+                      File: {uploadedFile.name} | Size: {(uploadedFile.size / 1024).toFixed(2)} KB
+                    </p>
+                  )}
+                  {fileHash && (
+                    <div className="mt-2 p-3 bg-white/10 border border-white/20 rounded-[16px] break-words">
+                      <p className={`text-green-300 ${typography.base2M}`}>Instant SHA-256 Hash:</p>
+                      <p className={`text-white font-mono ${typography.base2}`}>{fileHash}</p>
+                    </div>
+                  )}
                   <p className={`${typography.caption} text-gray-400 mt-2`}>
-                    We create cryptographic proof of creation date. Not a patent, but solid proof your idea came first.
+                    We create cryptographic proof of creation date by hashing your file content. Your file is **not uploaded**, only its cryptographic hash is used.
                   </p>
                 </div>
+                {/* END REPLACED */}
                 {/* Wallet Connect Section */}
                 <div className="mt-8">
                   <div className="mb-4">
@@ -371,54 +500,4 @@ function PatentClaudeApp() {
             <div className="bg-black/20 backdrop-blur-lg rounded-[32px] border border-white/10 p-8">
               <h2 className={`${typography.title} text-white mb-6 flex items-center gap-2`}>
                 <Search className="w-6 h-6 text-purple-400" />
-                {currentSection === "certificates" ? "My Certificates" : "Verify Proof"}
-              </h2>
-              {currentSection === "certificates" ? (
-                <div>
-                  {certificate ? (
-                    <div className="bg-white/5 border border-white/10 rounded-[32px] p-6">
-                      <h3 className={`text-white ${typography.title} mb-2`}>{certificate.description.slice(0, 50) + "..."}</h3>
-                      <p className={`text-gray-300 ${typography.base2} mb-2`}>Category: {categories.find(c => c.value === certificate.category)?.label}</p>
-                      <p className={`text-gray-400 ${typography.caption}`}>Protected: {new Date(certificate.timestamp).toLocaleDateString()}</p>
-                    </div>
-                  ) : (
-                    <div className="text-center py-12">
-                      <p className={`text-gray-400 mb-4 ${typography.body}`}>No certificates yet</p>
-                      <button
-                        onClick={startNewProtectionProcess}
-                        className={`bg-blue-500 text-white px-6 py-3 rounded-[32px] hover:bg-blue-600 transition-all ${typography.baseM}`}
-                      >
-                        Protect Your First Idea
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  <div>
-                    <label className={`block text-gray-300 ${typography.baseM} mb-2`}>Enter Original Content</label>
-                    <textarea
-                      placeholder="Re-enter your exact original innovation description..."
-                      className={`w-full h-32 bg-white/5 border border-white/10 rounded-[32px] px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 ${typography.body}`}
-                    />
-                  </div>
-                  <button className={`w-full bg-gradient-to-r from-purple-500 to-pink-600 text-white ${typography.baseM} py-4 px-6 rounded-[32px] hover:from-purple-600 hover:to-pink-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02]`}>
-                    Verify Proof
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-    // Wrap with WalletProvider at the root
-export default function App() {
-  return (
-    <WalletProvider testnet={true}>
-      <PatentClaudeApp />
-    </WalletProvider>
-  );
-}
+                {currentSection === "certificates" ? "My
