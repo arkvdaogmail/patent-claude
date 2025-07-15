@@ -423,4 +423,4 @@ export default function App() {
     </WalletProvider>
   );
 }
-}
+
