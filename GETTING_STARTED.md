@@ -29,18 +29,34 @@ Your application is now fully functional and ready for development and testing.
 #### 1. **API Testing**
 - **Health Check Endpoint:** `http://localhost:3000/api/health`
 - **Test with curl:** `curl http://localhost:3000/api/health`
-- **Expected Response:** `{"status":"OK","message":"Server is running!"}`
+- **Expected Response:** `{"status":"OK","message":"Server is running!"`
 
-#### 2. **Frontend Testing**
+#### 2. **File Upload Testing**
+- **Upload Endpoint:** `http://localhost:3000/api/upload`
+- **Test with curl:** `curl -X POST -F "files=@yourfile.txt" http://localhost:3000/api/upload`
+- **View Files:** `http://localhost:3000/api/files`
+- **Access File:** `http://localhost:3000/api/files/filename.ext`
+
+#### 3. **Frontend Testing**
 - **Main App:** `http://localhost:3000/`
 - **Development Server:** `http://localhost:5173/` (when using `npm run dev`)
 - **Features to Test:**
   - Server connection status display
+  - **Drag & Drop File Upload** 📁
+  - **Click to Select Files** 
+  - **File Type Validation** (Images, PDFs, Documents, Text)
+  - **File Size Validation** (10MB limit)
+  - **Upload Progress Indicator**
+  - **File List Management** (View, Remove)
+  - **Real-time Upload Status**
   - Responsive design
   - React component rendering
 
-#### 3. **Full-Stack Integration**
+#### 4. **Full-Stack Integration**
 - The React app automatically calls the `/api/health` endpoint
+- **File uploads are saved to `uploads/` directory**
+- **Files are processed through Express + Multer**
+- **Frontend communicates with backend API**
 - Check browser console for any errors
 - Verify the server status shows "✅ Server is running!"
 
@@ -73,15 +89,22 @@ To add proper testing to your application:
 
 ```
 owl/
-├── src/                   # React frontend source
-│   ├── App.jsx           # Main React component
-│   ├── main.jsx          # React entry point
-│   └── *.css             # Styles
-├── dist/                 # Built frontend files
-├── index.js              # Express server
-├── package.json          # Dependencies and scripts
-├── vite.config.js        # Vite configuration
-└── .env                  # Environment variables
+├── src/                           # React frontend source
+│   ├── components/               # React components
+│   │   ├── FileUpload.jsx       # File upload component
+│   │   └── FileUpload.css       # Upload component styles
+│   ├── App.jsx                  # Main React component
+│   ├── main.jsx                 # React entry point
+│   ├── App.css                  # Main app styles
+│   └── index.css                # Global styles
+├── uploads/                      # Uploaded files (auto-created)
+├── dist/                        # Built frontend files
+├── index.js                     # Express server with file upload
+├── package.json                 # Dependencies and scripts
+├── vite.config.js               # Vite configuration
+├── .env                         # Environment variables
+├── .gitignore                   # Git ignore rules
+└── GETTING_STARTED.md           # This guide
 ```
 
 ### 🔧 Next Development Steps

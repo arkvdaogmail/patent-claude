@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import './App.css'
+import FileUpload from './components/FileUpload'
 
 function App() {
   const [health, setHealth] = useState(null)
+  const [uploadedFiles, setUploadedFiles] = useState([])
 
   useEffect(() => {
     // Test the API connection
@@ -11,6 +13,12 @@ function App() {
       .then(data => setHealth(data))
       .catch(err => console.error('API connection failed:', err))
   }, [])
+
+  const handleFileUpload = (fileInfo) => {
+    console.log('File uploaded:', fileInfo)
+    setUploadedFiles(prev => [...prev, fileInfo])
+    // Here you could send the file to your server
+  }
 
   return (
     <div className="App">
@@ -36,6 +44,7 @@ function App() {
           <ul>
             <li>✅ Basic Express server running</li>
             <li>✅ React frontend connected</li>
+            <li>✅ File upload functionality added</li>
             <li>🔧 Add VeChain wallet connection</li>
             <li>🔧 Set up Supabase integration</li>
             <li>🔧 Add your business logic</li>
@@ -43,6 +52,18 @@ function App() {
           </ul>
         </div>
       </header>
+
+      <div className="file-upload-section">
+        <h2>📁 File Upload & Attachment</h2>
+        <FileUpload onFileUpload={handleFileUpload} />
+        
+        {uploadedFiles.length > 0 && (
+          <div className="upload-summary">
+            <h3>Total Files Uploaded: {uploadedFiles.length}</h3>
+            <p>Files are ready for processing with VeChain or Supabase!</p>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
