@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import './App.css'
 import FileUpload from './components/FileUpload'
+import PaymentArea from './components/PaymentArea'
 
 function App() {
   const [health, setHealth] = useState(null)
@@ -45,7 +46,8 @@ function App() {
             <li>✅ Basic Express server running</li>
             <li>✅ React frontend connected</li>
             <li>✅ File upload functionality added</li>
-            <li>🔧 Add VeChain wallet connection</li>
+            <li>✅ Stripe payment integration</li>
+            <li>✅ Wallet connect (MetaMask, WalletConnect)</li>
             <li>🔧 Set up Supabase integration</li>
             <li>🔧 Add your business logic</li>
             <li>🧪 Write tests for your features</li>
@@ -64,6 +66,8 @@ function App() {
           </div>
         )}
       </div>
+
+      <PaymentArea />
     </div>
   )
 }

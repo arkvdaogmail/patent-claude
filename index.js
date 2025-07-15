@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const multer = require('multer');
 const fs = require('fs');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY || 'sk_test_51HdSGxxx'); // Replace with your actual secret key
 require('dotenv').config();
 
 const app = express();
@@ -52,6 +53,70 @@ app.use(express.static('dist'));
 // Basic health check route
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Server is running!' });
+});
+
+// Stripe payment intent endpoint
+app.post('/api/create-payment-intent', async (req, res) => {
+  try {
+    const { amount, currency } = req.body;
+
+    if (!amount || !currency) {
+      return res.status(400).json({ error: 'Amount and currency are required' });
+    }
+
+    // Create a PaymentIntent with the order amount and currency
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: amount,
+      currency: currency,
+      automatic_payment_methods: {
+        enabled: true,
+      },
+      metadata: {
+        integration_check: 'accept_a_payment',
+      },
+    });
+
+    res.json({
+      clientSecret: paymentIntent.client_secret,
+      paymentIntentId: paymentIntent.id,
+    });
+  } catch (error) {
+    console.error('Payment intent creation error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Stripe webhook endpoint for payment confirmation
+app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), (req, res) => {
+  const sig = req.headers['stripe-signature'];
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || 'whsec_test_xxx'; // Replace with your actual webhook secret
+
+  let event;
+
+  try {
+    event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+  } catch (err) {
+    console.error('Webhook signature verification failed:', err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  // Handle the event
+  switch (event.type) {
+    case 'payment_intent.succeeded':
+      const paymentIntent = event.data.object;
+      console.log('Payment successful:', paymentIntent.id);
+      // Handle successful payment here
+      break;
+    case 'payment_intent.payment_failed':
+      const failedPayment = event.data.object;
+      console.log('Payment failed:', failedPayment.id);
+      // Handle failed payment here
+      break;
+    default:
+      console.log(`Unhandled event type ${event.type}`);
+  }
+
+  res.json({ received: true });
 });
 
 // File upload endpoint

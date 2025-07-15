@@ -52,10 +52,19 @@ Your application is now fully functional and ready for development and testing.
   - Responsive design
   - React component rendering
 
-#### 4. **Full-Stack Integration**
+#### 4. **Payment System Testing**
+- **Stripe Payments:** Test with credit/debit cards
+- **Wallet Connect:** Test with MetaMask, WalletConnect
+- **Payment Methods:** Switch between card and crypto payments
+- **Amount Configuration:** Change payment amounts and currencies
+- **Payment Flow:** Complete end-to-end payment testing
+
+#### 5. **Full-Stack Integration**
 - The React app automatically calls the `/api/health` endpoint
 - **File uploads are saved to `uploads/` directory**
 - **Files are processed through Express + Multer**
+- **Stripe payments processed through secure API**
+- **Wallet connect integrates with Ethereum blockchain**
 - **Frontend communicates with backend API**
 - Check browser console for any errors
 - Verify the server status shows "✅ Server is running!"
@@ -92,14 +101,20 @@ owl/
 ├── src/                           # React frontend source
 │   ├── components/               # React components
 │   │   ├── FileUpload.jsx       # File upload component
-│   │   └── FileUpload.css       # Upload component styles
+│   │   ├── FileUpload.css       # Upload component styles
+│   │   ├── PaymentArea.jsx      # Payment & wallet connect
+│   │   ├── PaymentArea.css      # Payment area styles
+│   │   ├── StripePayment.jsx    # Stripe payment component
+│   │   ├── StripePayment.css    # Stripe payment styles
+│   │   ├── WalletConnect.jsx    # Crypto wallet component
+│   │   └── WalletConnect.css    # Wallet connect styles
 │   ├── App.jsx                  # Main React component
 │   ├── main.jsx                 # React entry point
 │   ├── App.css                  # Main app styles
 │   └── index.css                # Global styles
 ├── uploads/                      # Uploaded files (auto-created)
 ├── dist/                        # Built frontend files
-├── index.js                     # Express server with file upload
+├── index.js                     # Express server with payments & uploads
 ├── package.json                 # Dependencies and scripts
 ├── vite.config.js               # Vite configuration
 ├── .env                         # Environment variables
@@ -109,16 +124,37 @@ owl/
 
 ### 🔧 Next Development Steps
 
-1. **Add VeChain Integration:** Use the `@vechain/connex` dependency
+1. **Configure Payment Keys:** 
+   - Get your Stripe keys from https://dashboard.stripe.com/
+   - Set up Infura project at https://infura.io/
+   - Update `.env` with your actual keys
+
 2. **Setup Supabase:** Configure your Supabase credentials in `.env`
-3. **Add More API Routes:** Extend the Express server
-4. **Add More React Components:** Build your frontend features
-5. **Write Tests:** Add comprehensive test coverage
+
+3. **Add VeChain Integration:** Use the `@vechain/connex` dependency
+
+4. **Add More API Routes:** Extend the Express server
+
+5. **Add More React Components:** Build your frontend features
+
+6. **Write Tests:** Add comprehensive test coverage
+
+7. **Deploy:** Set up production deployment with secure payment processing
 
 ### 🌐 Environment Setup
 
 Update your `.env` file with real values:
 ```env
+# Stripe Configuration (Get from https://dashboard.stripe.com/)
+STRIPE_SECRET_KEY=sk_test_your_actual_stripe_secret_key
+STRIPE_WEBHOOK_SECRET=whsec_your_actual_webhook_secret
+REACT_APP_STRIPE_PUBLISHABLE_KEY=pk_test_your_actual_stripe_publishable_key
+
+# Wallet Configuration (Get from https://infura.io/)
+REACT_APP_INFURA_ID=your_actual_infura_project_id
+REACT_APP_PAYMENT_ADDRESS=your_actual_eth_payment_address
+
+# Supabase Configuration
 SUPABASE_URL=your_actual_supabase_url
 SUPABASE_ANON_KEY=your_actual_supabase_key
 ```
