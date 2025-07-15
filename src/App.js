@@ -105,7 +105,7 @@ function PatentClaudeApp() {
   }
 
   // Step 3: Pay & Protect
-  async function handlePayAndProtect() {
+  priceId: 'price_1Rl0vSF31XjIKGr0jns601O2',
     if (!wallet || !wallet.address) {
       alert("Connect your wallet first!");
       return;
