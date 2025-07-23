@@ -1,4 +1,4 @@
-iimport React, { useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 
 const ACCEPTED_FILE_TYPES = [
   'image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp',
