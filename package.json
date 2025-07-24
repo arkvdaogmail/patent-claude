@@ -1,0 +1,43 @@
+{
+  "name": "patent-claude",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "start": "node index.js",
+    "dev:server": "nodemon index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@stripe/react-stripe-js": "^3.7.0",
+    "@stripe/stripe-js": "^7.4.0",
+    "@supabase/supabase-js": "^2.51.0",
+    "@vechain/connex": "^1.4.2",
+    "@walletconnect/client": "^1.8.0",
+    "@walletconnect/web3-provider": "^1.8.0",
+    "axios": "^1.10.0",
+    "dotenv": "^16.5.0",
+    "ethers": "^6.15.0",
+    "express": "^5.1.0",
+    "js-sha256": "^0.11.1",
+    "lucide-react": "^0.525.0",
+    "multer": "^2.0.1",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "sha256": "^0.2.0",
+    "stripe": "^18.3.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.6.0",
+    "rollup-plugin-node-polyfills": "^0.2.1",
+    "vite": "^7.0.3"
+  }
+}
+
