@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-export default function UploadAfterPayment({ fileToUpload, paymentIntentId, userId }) {
+export default function UploadAfterPayment({ fileToUpload, paymentIntentId, userId, onSuccess }) {
   const [status, setStatus] = useState('Ready to publish...');
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
@@ -33,6 +33,11 @@ export default function UploadAfterPayment({ fileToUpload, paymentIntentId, user
       }
       setResult(data);
       setStatus('Success! Your document has been notarized.');
+      
+      // Call the success callback to navigate to certificate page
+      if (onSuccess) {
+        onSuccess(data);
+      }
     } catch (err) {
       setStatus('Failed');
       setError(err.message);

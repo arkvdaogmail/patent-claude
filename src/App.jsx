@@ -1,68 +1,115 @@
-// In file: /src/App.jsx
-
 import { useState } from 'react';
+import './App.css';
 import StripePayment from './components/StripePayment';
 import UploadAfterPayment from './components/UploadAfterPayment';
-import './App.css'; // Make sure this import is here!
+import CertificatePage from './components/CertificatePage';
+import LookupPage from './components/LookupPage';
 
 function App() {
-  const [file, setFile] = useState(null);
-  const [fileName, setFileName] = useState('');
+  const [currentPage, setCurrentPage] = useState('upload'); // 'upload', 'certificate', 'lookup'
+  const [selectedFile, setSelectedFile] = useState(null);
   const [paymentIntentId, setPaymentIntentId] = useState(null);
+  const [notarizationResult, setNotarizationResult] = useState(null);
 
-  const handleFileChange = (e) => {
-    const selectedFile = e.target.files[0];
-    if (selectedFile) {
-      setFile(selectedFile);
-      setFileName(selectedFile.name);
-      setPaymentIntentId(null); // Reset payment status if a new file is chosen
-    }
+  const handleFileSelect = (event) => {
+    const file = event.target.files[0];
+    setSelectedFile(file);
   };
 
-  // This function is called by StripePayment when payment is successful
-  const handlePaymentSuccess = (id) => {
-    setPaymentIntentId(id);
+  const handlePaymentSuccess = (intentId) => {
+    setPaymentIntentId(intentId);
+  };
+
+  const handleNotarizationSuccess = (result) => {
+    setNotarizationResult(result);
+    setCurrentPage('certificate');
+  };
+
+  const resetToUpload = () => {
+    setCurrentPage('upload');
+    setSelectedFile(null);
+    setPaymentIntentId(null);
+    setNotarizationResult(null);
   };
 
   return (
     <div className="App">
       <header className="App-header">
         <h1>Document Notarization Service</h1>
+        <nav className="navigation">
+          <button 
+            onClick={() => setCurrentPage('upload')}
+            className={currentPage === 'upload' ? 'active' : ''}
+          >
+            Notarize Document
+          </button>
+          <button 
+            onClick={() => setCurrentPage('lookup')}
+            className={currentPage === 'lookup' ? 'active' : ''}
+          >
+            Lookup Document
+          </button>
+        </nav>
       </header>
 
-      <main className="content-area">
-        
-        {/* Step 1: File Selection */}
-        <div className="card">
-          <h2>1. Select Your Document</h2>
-          <p>Choose the document you wish to notarize on the Vechain blockchain.</p>
-          <input type="file" onChange={handleFileChange} />
-        </div>
+      <main className="App-main">
+        {currentPage === 'upload' && (
+          <div className="upload-flow">
+            <section className="file-selection">
+              <h2>1. Select Your Document</h2>
+              <p>Choose the document you wish to notarize on the VeChain blockchain.</p>
+              <input
+                type="file"
+                onChange={handleFileSelect}
+                accept=".pdf,.doc,.docx,.txt"
+                className="file-input"
+              />
+              {selectedFile && (
+                <p className="file-selected">
+                  Selected: <strong>{selectedFile.name}</strong>
+                </p>
+              )}
+            </section>
 
-        {/* Step 2: Review and Pay (only shows after a file is selected) */}
-        {file && !paymentIntentId && (
-          <div className="card">
-            <h2>2. Review and Pay</h2>
-            <p>You have selected: <strong>{fileName}</strong></p>
-            <p>Proceed with payment to notarize this document.</p>
-            <StripePayment
-              onPaymentSuccess={handlePaymentSuccess}
-              fileName={fileName}
-            />
+            {selectedFile && (
+              <section className="payment-section">
+                <h2>2. Review and Pay</h2>
+                <p>You have selected: <strong>{selectedFile.name}</strong></p>
+                <p>Proceed with payment to notarize this document.</p>
+                <StripePayment 
+                  onPaymentSuccess={handlePaymentSuccess}
+                  fileName={selectedFile.name}
+                />
+              </section>
+            )}
+
+            {paymentIntentId && (
+              <section className="notarization-section">
+                <h2>3. Notarize and Publish</h2>
+                <UploadAfterPayment
+                  fileToUpload={selectedFile}
+                  paymentIntentId={paymentIntentId}
+                  onSuccess={handleNotarizationSuccess}
+                />
+              </section>
+            )}
           </div>
         )}
 
-        {/* Step 3: Notarize and Publish (only shows after payment is successful) */}
-        {paymentIntentId && (
-          <div className="card">
-            <h2>3. Notarize and Publish</h2>
-            <p>Payment successful! Now, click the button below to publish the proof of your document to the blockchain.</p>
-            {/* This component now receives the file directly */}
-            <UploadAfterPayment
-              fileToUpload={file} 
-              paymentIntentId={paymentIntentId}
+        {currentPage === 'certificate' && (
+          <div className="certificate-flow">
+            <CertificatePage 
+              result={notarizationResult}
+              fileName={selectedFile?.name}
             />
+            <button onClick={resetToUpload} className="new-document-button">
+              Notarize Another Document
+            </button>
           </div>
+        )}
+
+        {currentPage === 'lookup' && (
+          <LookupPage />
         )}
       </main>
     </div>
