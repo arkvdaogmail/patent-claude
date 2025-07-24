@@ -1,3 +1,4 @@
+import './App.css';
 import FileUpload from './components/FileUpload';
 import PaymentArea from './components/PaymentArea';
 import StripePayment from './components/StripePayment';
