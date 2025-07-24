@@ -1,37 +1,32 @@
-import { useState } from 'react';
+// In file: src/components/UploadAfterPayment.jsx
 
-export default function UploadAfterPayment({ paymentIntentId, userId }) {
-  const [file, setFile] = useState(null);
-  const [status, setStatus] = useState(null);
+import { useState, useEffect } from 'react';
+
+// This component now receives the file as a "prop"
+export default function UploadAfterPayment({ fileToUpload, paymentIntentId, userId }) {
+  const [status, setStatus] = useState('Ready to publish...');
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
 
-  const handleFileChange = e => {
-    setFile(e.target.files[0]);
-    setStatus(null); // Reset status when a new file is chosen
-    setError(null);
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!file) {
-      setError('Please choose a file first.');
+  // This function runs automatically when the component is displayed
+  const handlePublish = async () => {
+    if (!fileToUpload) {
+      setError('No file was provided to notarize.');
       return;
     }
 
-    setStatus('Uploading and processing...');
+    setStatus('Processing and publishing to blockchain...');
     setError(null);
     setResult(null);
 
     const formData = new FormData();
-    formData.append('document', file);
+    formData.append('document', fileToUpload);
     formData.append('paymentIntentId', paymentIntentId);
     if (userId) {
       formData.append('userId', userId);
     }
 
     try {
-      // --- THIS IS THE CORRECTED API PATH ---
       const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
@@ -40,15 +35,13 @@ export default function UploadAfterPayment({ paymentIntentId, userId }) {
       const data = await response.json();
 
       if (!response.ok) {
-        // Handle errors from the server (like a failed transaction)
-        throw new Error(data.error || 'An unknown error occurred.');
+        throw new Error(data.error || 'An unknown server error occurred.');
       }
 
       setResult(data);
       setStatus('Success! Your document has been notarized.');
 
     } catch (err) {
-      // Handle network errors or exceptions
       setStatus('Failed');
       setError(err.message);
     }
@@ -56,23 +49,18 @@ export default function UploadAfterPayment({ paymentIntentId, userId }) {
 
   return (
     <div className="upload-area">
-      <h3>Notarize and Publish Document</h3>
-      <form onSubmit={handleSubmit}>
-        <input type="file" onChange={handleFileChange} />
-        <button type="submit" disabled={!file || status === 'Uploading and processing...'}>
-          Notarize and Publish
-        </button>
-      </form>
+      {/* The button to trigger the notarization */}
+      <button onClick={handlePublish} disabled={status.includes('Processing')}>
+        Notarize and Publish
+      </button>
 
+      {/* Display area for status and results */}
       {status && <p className="status-message">Status: {status}</p>}
       {error && <p className="error-message">Error: {error}</p>}
 
       {result && (
         <div className="result-summary">
           <h4>Notarization Complete!</h4>
-          <p>
-            <strong>Document Hash:</strong> {result.fileHash}
-          </p>
           <p>
             <strong>Vechain Transaction ID:</strong> {result.txId}
           </p>
