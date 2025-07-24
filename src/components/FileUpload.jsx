@@ -1,173 +1,92 @@
-import React, { useRef, useState } from 'react';    
+import { useState } from 'react';
 
-const ACCEPTED_FILE_TYPES = [
-  'image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp',
-  'application/pdf', 'text/plain', 'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/json', 'text/csv'
-];
-
+// Allowed file extensions
 const ACCEPTED_EXTENSIONS = [
   '.jpg', '.jpeg', '.png', '.gif', '.webp', '.pdf', '.txt', '.doc', '.docx', '.json', '.csv'
 ];
 
-const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+function getExtension(filename) {
+  return filename.slice(((filename.lastIndexOf('.') - 1) >>> 0) + 1).toLowerCase();
+}
+
+function isAccepted(file) {
+  const ext = '.' + getExtension(file.name);
+  return ACCEPTED_EXTENSIONS.includes(ext);
+}
 
 export default function FileUpload({ onFileUpload }) {
+  const [pickedFiles, setPickedFiles] = useState([]);
   const [uploadedFiles, setUploadedFiles] = useState([]);
-  const [isDragOver, setIsDragOver] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const inputRef = useRef(null);
+  const [error, setError] = useState('');
 
-  const handleFileSelect = (e) => {
-    handleFiles(e.target.files);
-  };
-
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragOver(true);
-  };
-
-  const handleDragLeave = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragOver(false);
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragOver(false);
-    handleFiles(e.dataTransfer.files);
-  };
-
-  const handleFiles = async (files) => {
-    const validFiles = Array.from(files).filter(file =>
-      ACCEPTED_FILE_TYPES.includes(file.type) && file.size <= MAX_SIZE
-    );
-
-    if (validFiles.length !== files.length) {
-      alert('Some files were rejected. Please upload only images, PDFs, documents, or text files under 10MB.');
+  // Handle file selection
+  const handlePick = (e) => {
+    const files = Array.from(e.target.files);
+    const valid = files.filter(isAccepted);
+    const invalid = files.filter(f => !isAccepted(f));
+    setPickedFiles(valid);
+    if (invalid.length > 0) {
+      setError(`Rejected: ${invalid.map(f => f.name).join(', ')}`);
+    } else {
+      setError('');
     }
+  };
 
-    if (validFiles.length === 0) return;
-
+  // Mock upload handler (replace with real API call when backend ready)
+  const handleUpload = () => {
     setUploading(true);
-
-    // Upload files to server
-    try {
-      const formData = new FormData();
-      validFiles.forEach(file => {
-        formData.append('files', file);
-      });
-
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData
-      });
-
-      if (!response.ok) {
-        throw new Error('Upload failed');
+    setTimeout(() => {
+      const newFiles = pickedFiles.map(file => ({
+        id: Date.now() + Math.random(),
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        uploadedAt: new Date().toISOString(),
+      }));
+      setUploadedFiles(prev => [...prev, ...newFiles]);
+      setPickedFiles([]);
+      setUploading(false);
+      setError('');
+      if (onFileUpload) {
+        newFiles.forEach(f => onFileUpload(f));
       }
-
-      const result = await response.json();
-
-      // Assume result.files is an array of file info
-      (result.files || []).forEach(fileInfo => {
-        setUploadedFiles(prev => [...prev, {
-          ...fileInfo,
-          status: 'completed'
-        }]);
-        if (onFileUpload) {
-          onFileUpload(fileInfo);
-        }
-      });
-
-    } catch (error) {
-      console.error('Upload failed:', error);
-      alert('Upload failed. Please try again.');
-    }
-
-    setUploading(false);
-  };
-
-  const formatFileSize = (bytes) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
-
-  const removeFile = (fileId) => {
-    setUploadedFiles(prev => prev.filter(file => file.id !== fileId));
+    }, 800);
   };
 
   return (
-    <div className="file-upload-container">
-      <div
-        className={`file-upload-zone ${isDragOver ? 'drag-over' : ''}`}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-      >
-        <div className="upload-content">
-          <div className="upload-icon">📁</div>
-          <h3>Drop files here or click to select</h3>
-          <p>Support for images, PDFs, documents, and text files (max 10MB each)</p>
-
-          <input
-            type="file"
-            multiple
-            ref={inputRef}
-            onChange={handleFileSelect}
-            className="file-input"
-            accept={ACCEPTED_EXTENSIONS.join(',')}
-            style={{ display: 'none' }}
-          />
-
-          <button
-            className="upload-button"
-            onClick={() => inputRef.current && inputRef.current.click()}
-            disabled={uploading}
-          >
-            {uploading ? 'Uploading...' : 'Choose Files'}
+    <div>
+      <input
+        type="file"
+        multiple
+        accept={ACCEPTED_EXTENSIONS.join(',')}
+        onChange={handlePick}
+        disabled={uploading}
+      />
+      {error && <div style={{ color: 'red', marginTop: 4 }}>{error}</div>}
+      {pickedFiles.length > 0 && (
+        <div style={{ marginTop: 8 }}>
+          <strong>Ready to upload:</strong>
+          <ul>
+            {pickedFiles.map(f => (
+              <li key={f.name + f.size}>{f.name} ({f.size} bytes)</li>
+            ))}
+          </ul>
+          <button onClick={handleUpload} disabled={uploading}>
+            {uploading ? 'Uploading...' : 'Upload'}
           </button>
         </div>
-      </div>
-
-      {uploading && (
-        <div className="upload-progress">
-          <div className="progress-bar">
-            <div className="progress-fill"></div>
-          </div>
-          <p>Uploading files...</p>
-        </div>
       )}
-
       {uploadedFiles.length > 0 && (
-        <div className="uploaded-files">
-          <h4>Uploaded Files ({uploadedFiles.length})</h4>
-          <div className="files-list">
-            {uploadedFiles.map(file => (
-              <div key={file.id || file.filename || file.name} className="file-item">
-                <div className="file-info">
-                  <span className="file-icon">
-                    {file.type?.startsWith('image/') ? '🖼️' :
-                      file.type === 'application/pdf' ? '📄' :
-                        file.type?.includes('document') || /\.(doc|docx)$/i.test(file.filename || file.name) ? '📝' : '📋'}
-                  </span>
-                  <div className="file-details">
-                    <div className="file-name">{file.filename || file.name}</div>
-                    <div className="file-size">{formatFileSize(file.size)}</div>
-                  </div>
-                  <button className="remove-file" onClick={() => removeFile(file.id || file.filename || file.name)}>❌</button>
-                </div>
-                <div className="file-status">{file.status || 'uploaded'}</div>
-              </div>
+        <div style={{ marginTop: 16 }}>
+          <strong>Uploaded files:</strong>
+          <ul>
+            {uploadedFiles.map(f => (
+              <li key={f.id}>
+                {f.name} ({f.size} bytes) — Uploaded at {new Date(f.uploadedAt).toLocaleString()}
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
       )}
     </div>
