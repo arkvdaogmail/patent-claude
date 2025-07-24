@@ -9,44 +9,17 @@ function App() {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    // MOCK: Remove real fetch, just set fake health
+    // MOCK: Remove all real fetch calls. Just set fake health data.
     setTimeout(() => {
       setHealth({
         status: 'healthy',
         message: 'Mocked API: UI-only mode'
       })
     }, 400)
-    // When backend ready, restore this:
-    // fetch('/api/health')
-    //   .then(res => {
-    //     if (!res.ok) throw new Error('API not available')
-    //     return res.json()
-    //   })
-    //   .then(data => setHealth(data))
-    //   .catch(err => {
-    //     console.error('API connection failed:', err)
-    //     setError('API connection failed - running in frontend-only mode')
-    //   })
   }, [])
 
   const handleFileUpload = (fileInfo) => {
     setUploadedFiles(prev => [...prev, fileInfo])
-  }
-
-  if (error) {
-    return (
-      <div className="App">
-        <header className="App-header">
-          <h1>🦉 Owl App</h1>
-          <p>Welcome to your React + Vite application!</p>
-          <div className="error-card">
-            <h3>⚠️ Backend Not Available</h3>
-            <p>{error}</p>
-            <p>The frontend is working! Deploy to Vercel to enable full functionality.</p>
-          </div>
-        </header>
-      </div>
-    )
   }
 
   return (
@@ -54,7 +27,6 @@ function App() {
       <header className="App-header">
         <h1>🦉 Owl App</h1>
         <p>Welcome to your VeChain + Supabase + React application!</p>
-        
         <div className="status-card">
           <h3>Server Status</h3>
           {health ? (
@@ -68,11 +40,9 @@ function App() {
           )}
         </div>
       </header>
-
       <div className="file-upload-section">
         <h2>📁 File Upload & Attachment</h2>
         <FileUpload onFileUpload={handleFileUpload} />
-        
         {uploadedFiles.length > 0 && (
           <div className="upload-summary">
             <h3>Total Files Uploaded: {uploadedFiles.length}</h3>
@@ -80,7 +50,6 @@ function App() {
           </div>
         )}
       </div>
-
       <PaymentArea />
     </div>
   )
