@@ -1,5 +1,3 @@
-import MainUI from './components/MainUI';
-
 export default function App() {
-  return <MainUI />;
+  return <div>Hello, your React UI is working!</div>;
 }
