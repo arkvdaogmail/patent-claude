@@ -9,23 +9,27 @@ function App() {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    // Test the API connection with error handling
-    fetch('/api/health')
-      .then(res => {
-        if (!res.ok) {
-          throw new Error('API not available')
-        }
-        return res.json()
+    // MOCK: Remove real fetch, just set fake health
+    setTimeout(() => {
+      setHealth({
+        status: 'healthy',
+        message: 'Mocked API: UI-only mode'
       })
-      .then(data => setHealth(data))
-      .catch(err => {
-        console.error('API connection failed:', err)
-        setError('API connection failed - running in frontend-only mode')
-      })
+    }, 400)
+    // When backend ready, restore this:
+    // fetch('/api/health')
+    //   .then(res => {
+    //     if (!res.ok) throw new Error('API not available')
+    //     return res.json()
+    //   })
+    //   .then(data => setHealth(data))
+    //   .catch(err => {
+    //     console.error('API connection failed:', err)
+    //     setError('API connection failed - running in frontend-only mode')
+    //   })
   }, [])
 
   const handleFileUpload = (fileInfo) => {
-    console.log('File uploaded:', fileInfo)
     setUploadedFiles(prev => [...prev, fileInfo])
   }
 
@@ -35,7 +39,6 @@ function App() {
         <header className="App-header">
           <h1>🦉 Owl App</h1>
           <p>Welcome to your React + Vite application!</p>
-          
           <div className="error-card">
             <h3>⚠️ Backend Not Available</h3>
             <p>{error}</p>
