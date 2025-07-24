@@ -1,16 +1,11 @@
 import { useState } from 'react';
 
-// Allowed file extensions
 const ACCEPTED_EXTENSIONS = [
   '.jpg', '.jpeg', '.png', '.gif', '.webp', '.pdf', '.txt', '.doc', '.docx', '.json', '.csv'
 ];
 
-function getExtension(filename) {
-  return filename.slice(((filename.lastIndexOf('.') - 1) >>> 0) + 1).toLowerCase();
-}
-
 function isAccepted(file) {
-  const ext = '.' + getExtension(file.name);
+  const ext = '.' + file.name.split('.').pop().toLowerCase();
   return ACCEPTED_EXTENSIONS.includes(ext);
 }
 
@@ -33,7 +28,7 @@ export default function FileUpload({ onFileUpload }) {
     }
   };
 
-  // Mock upload handler (replace with real API call when backend ready)
+  // Simulate upload
   const handleUpload = () => {
     setUploading(true);
     setTimeout(() => {
