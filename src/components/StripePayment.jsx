@@ -1,61 +1,74 @@
-import { useState } from 'react'
+// In file: src/components/StripePayment.jsx
 
-// Simplified StripePayment component that doesn't crash
-function StripePayment({ amount, currency, onSuccess, onError }) {
-  const [isProcessing, setIsProcessing] = useState(false)
-  const [cardError, setCardError] = useState(null)
+import { useState } from 'react';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+
+// --- IMPORTANT: Use your VITE_STRIPE_PUBLISHABLE_KEY from your .env file ---
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+
+const CheckoutForm = ({ onPaymentSuccess, fileName }) => {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [error, setError] = useState(null);
+  const [processing, setProcessing] = useState(false);
 
   const handleSubmit = async (event) => {
-    event.preventDefault()
-    setIsProcessing(true)
-    
-    // Simulate payment processing
-    setTimeout(() => {
-      setIsProcessing(false)
-      if (onSuccess) {
-        onSuccess({ 
-          id: 'demo_payment_' + Date.now(),
-          amount: amount || 1000,
-          currency: currency || 'usd',
-          status: 'succeeded'
-        })
-      }
-    }, 2000)
-  }
+    event.preventDefault();
+    setProcessing(true);
+    setError(null);
+
+    if (!stripe || !elements) {
+      setError("Stripe.js has not loaded yet.");
+      setProcessing(false);
+      return;
+    }
+
+    // Step 1: Create a Payment Intent on your server
+    const res = await fetch('/api/create-payment-intent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ description: `Notarization for ${fileName}` }),
+    });
+    const { clientSecret, error: backendError } = await res.json();
+
+    if (backendError) {
+      setError(backendError);
+      setProcessing(false);
+      return;
+    }
+
+    // Step 2: Confirm the payment on the client
+    const { error: stripeError, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+      payment_method: {
+        card: elements.getElement(CardElement),
+      },
+    });
+
+    if (stripeError) {
+      setError(stripeError.message);
+      setProcessing(false);
+    } else if (paymentIntent.status === 'succeeded') {
+      // --- This is the crucial part that connects back to App.jsx ---
+      onPaymentSuccess(paymentIntent.id);
+    }
+  };
 
   return (
-    <div style={{ padding: '16px', border: '1px solid #ddd', borderRadius: '8px' }}>
-      <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: '16px' }}>
-          <div style={{ padding: '12px', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#f9f9f9' }}>
-            💳 Card Element (Demo Mode)
-          </div>
-        </div>
-        
-        {cardError && (
-          <div style={{ color: 'red', marginBottom: '16px' }}>
-            {cardError}
-          </div>
-        )}
-        
-        <button 
-          type="submit" 
-          disabled={isProcessing}
-          style={{
-            padding: '12px 24px',
-            backgroundColor: isProcessing ? '#ccc' : '#007cba',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: isProcessing ? 'not-allowed' : 'pointer'
-          }}
-        >
-          {isProcessing ? 'Processing...' : `Pay $${(amount || 1000) / 100}`}
-        </button>
-      </form>
-    </div>
-  )
-}
+    <form onSubmit={handleSubmit}>
+      <CardElement />
+      <button type="submit" disabled={!stripe || processing}>
+        {processing ? 'Processing...' : 'Pay $1.00'}
+      </button>
+      {error && <div className="error-message">{error}</div>}
+    </form>
+  );
+};
 
-export default StripePayment
+const StripePayment = ({ onPaymentSuccess, fileName }) => (
+  <Elements stripe={stripePromise}>
+    <CheckoutForm onPaymentSuccess={onPaymentSuccess} fileName={fileName} />
+  </Elements>
+);
 
+export default StripePayment;
