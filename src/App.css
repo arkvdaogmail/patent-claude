@@ -1,31 +1,57 @@
+#root {
+  background-color: #282c34; /* A dark grey, matches your header */
+  min-height: 100vh;      /* Make sure it covers the whole screen */
+}
+
 .App {
   text-align: center;
-  padding: 20px;
+  color: white; /* Ensures text is readable */
+}
+
+.App-logo {
+  height: 40vmin;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
 }
 
 .App-header {
   background-color: #282c34;
-  padding: 40px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
   color: white;
-  border-radius: 10px;
-  margin: 20px 0;
 }
 
-.App-header h1 {
-  font-size: 3em;
-  margin-bottom: 10px;
+.App-link {
+  color: #61dafb;
+}
+
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .error-card {
-  background: #ffebee;
+  background: #fbebee;
   border: 2px solid #f44336;
   border-radius: 8px;
   padding: 20px;
-  margin: 20px 0;
   text-align: center;
 }
 
-.error-card h3 {
+.error-card h2 {
   color: #d32f2f;
   margin-top: 0;
 }
@@ -36,44 +62,45 @@
 }
 
 .status-card {
-  background: #f5f5f5;
+  background: #e8f5e9;
+  border: 2px solid #4caf50;
   border-radius: 8px;
   padding: 20px;
-  margin: 20px 0;
   text-align: center;
 }
 
-.status-ok {
-  color: #4caf50;
-  font-weight: bold;
+.status-card h2 {
+  color: #388e3c;
+  margin-top: 0;
 }
 
-.status-loading {
-  color: #ff9800;
-  font-weight: bold;
+.status-card p {
+  color: #666;
+  margin: 10px 0;
+}
+
+.payment-area {
+  width: 400px;
+  margin: 40px auto;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.payment-area h2 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  text-align: center;
 }
 
 .next-steps {
-  background-color: #e9ecef;
-  color: #333;
-  padding: 20px;
-  border-radius: 8px;
-  margin: 20px 0;
-}
-
-.next-steps ul {
-  text-align: left;
-  max-width: 400px;
-  margin: 0 auto;
-}
-
-.next-steps li {
-  margin: 10px 0;
+  margin: 30px 0;
   padding: 5px 0;
 }
 
 .file-upload-section {
-  margin: 40px 0;
+  margin: 20px 0;
   padding: 20px;
   background: #fafafa;
   border-radius: 8px;
@@ -88,17 +115,16 @@
 .upload-summary {
   margin-top: 20px;
   padding: 15px;
-  background: #e8f5e8;
-  border-radius: 8px;
+  background: #e0e0e0;
   border-left: 4px solid #4caf50;
 }
 
 .upload-summary h3 {
   margin: 0 0 10px 0;
-  color: #0d6efd;
+  color: #0d4f0f;
 }
 
 .upload-summary p {
-  margin: 0;
-  color: #495057;
+  margin: 5px 0;
+  color: #454545;
 }
