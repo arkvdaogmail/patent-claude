@@ -1,60 +1,83 @@
-const multer = require('multer');
-const path = require('path');
+// In file: /api/upload.js
 
-// Configure multer for file uploads
-const storage = multer.memoryStorage(); // Use memory storage for Vercel
-const upload = multer({ 
-  storage: storage,
-  limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
+import { createClient } from '@supabase/supabase-js';
+import { Thor, Driver, SimpleWallet } from '@vechain/sdk-core';
+import { SimpleGasPrice, TransactionHandler } from '@vechain/sdk-network';
+import formidable from 'formidable';
+import fs from 'fs';
+import crypto from 'crypto';
+
+// --- IMPORTANT: This tells Vercel how to handle the request ---
+export const config = {
+  api: {
+    bodyParser: false,
   },
-  fileFilter: (req, file, cb) => {
-    // Allow specific file types
-    const allowedTypes = /jpeg|jpg|png|gif|pdf|doc|docx|txt|csv|zip/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
-    
-    if (mimetype && extname) {
-      return cb(null, true);
-    } else {
-      cb(new Error('Only images, PDFs, documents, and archives are allowed!'));
-    }
-  }
-});
+};
 
-export default function handler(req, res) {
-  if (req.method === 'POST') {
-    // Handle file upload
-    upload.single('file')(req, res, (err) => {
-      if (err) {
-        return res.status(400).json({ 
-          success: false, 
-          error: err.message 
-        });
-      }
-      
-      if (!req.file) {
-        return res.status(400).json({ 
-          success: false, 
-          error: 'No file uploaded' 
-        });
-      }
-      
-      // In a real deployment, you'd save to cloud storage (AWS S3, Cloudinary, etc.)
-      res.json({
-        success: true,
-        message: 'File uploaded successfully',
-        file: {
-          filename: req.file.originalname,
-          size: req.file.size,
-          mimetype: req.file.mimetype,
-          // For demo purposes - in production, save to cloud storage
-          buffer: req.file.buffer.toString('base64')
-        }
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method Not Allowed' });
+  }
+
+  // --- Step 1: Initialize Supabase and Vechain clients ---
+  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+  const wallet = new SimpleWallet();
+  wallet.import(process.env.VET_PRIVATE_KEY);
+  const driver = await Driver.connect({
+      node: process.env.VECHAIN_NODE_URL,
+      wallet,
+  });
+  const thor = new Thor(driver);
+
+  // --- Step 2: Parse the incoming form data (file and fields) ---
+  const form = formidable();
+  try {
+    const { fields, files } = await new Promise((resolve, reject) => {
+      form.parse(req, (err, fields, files) => {
+        if (err) reject(err);
+        resolve({ fields, files });
       });
     });
-  } else {
-    res.setHeader('Allow', ['POST']);
-    res.status(405).end(`Method ${req.method} Not Allowed`);
+
+    const documentFile = files.document?.[0];
+    if (!documentFile) {
+      return res.status(400).json({ error: 'No document file uploaded.' });
+    }
+
+    // --- Step 3: Read the file and calculate its hash ---
+    const fileData = fs.readFileSync(documentFile.filepath);
+    const fileHash = '0x' + crypto.createHash('sha256').update(fileData).digest('hex');
+
+    // --- Step 4: Create a Vechain transaction ---
+    const clause = thor.contracts.createContractTransaction(
+        '0x0000000000000000000000000000000000000000', // A placeholder address
+        '0', // Amount of VET to send (zero)
+        fileHash // The document hash is the data we store on-chain
+    );
+
+    const gasPrice = await SimpleGasPrice.create(driver);
+    const body = await TransactionHandler.build(driver, [clause], { gasPrice });
+    const signedTx = await driver.wallet.sign(body);
+    const { id } = await thor.transactions.send(signedTx);
+
+    // --- Step 5: Save the record to Supabase ---
+    const { error: supabaseError } = await supabase.from(process.env.SUPABASE_TABLE).insert({
+      tx_id: id,
+      file_hash: fileHash,
+      payment_intent_id: fields.paymentIntentId?.[0], // Get the field value
+      user_id: fields.userId?.[0], // Get the field value
+      original_filename: documentFile.originalFilename,
+    });
+
+    if (supabaseError) {
+      throw new Error(`Supabase error: ${supabaseError.message}`);
+    }
+
+    // --- Step 6: Send the successful response ---
+    res.status(200).json({ txId: id, fileHash: fileHash });
+
+  } catch (error) {
+    console.error('Upload Error:', error);
+    res.status(500).json({ error: error.message || 'An internal server error occurred.' });
   }
 }
