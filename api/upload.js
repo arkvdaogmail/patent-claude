@@ -75,4 +75,3 @@ module.exports = async function handler(req, res) {
     res.status(500).json({ error: error.message || 'An internal server error occurred.' });
   }
 };
-
