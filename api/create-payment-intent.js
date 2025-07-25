@@ -1,7 +1,29 @@
 import Stripe from 'stripe';
 
-// Initialize Stripe with the secret key from your environment variables
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+// --- Start of a more robust debugging setup ---
+
+let stripe;
+let initializationError = null;
+
+// This block will try to initialize Stripe and catch any errors immediately.
+try {
+  // 1. Check if the environment variable exists.
+  const stripeKey = process.env.STRIPE_SECRET_KEY;
+  if (!stripeKey) {
+    throw new Error('STRIPE_SECRET_KEY environment variable is not set.');
+  }
+
+  // 2. Try to create the Stripe object.
+  stripe = new Stripe(stripeKey);
+
+} catch (err) {
+  // If anything goes wrong above, we store the error.
+  console.error('Failed to initialize Stripe:', err);
+  initializationError = err;
+}
+
+// --- End of robust debugging setup ---
+
 
 export default async function handler(req, res) {
   // Only allow POST requests
@@ -10,12 +32,18 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  try {
-    // For now, we will use a fixed amount.
-    // Later, this can come from the request body: req.body.amount
-    const amount = 3000; // Amount in cents ($30.00)
+  // --- New check: Immediately stop if Stripe failed to initialize ---
+  if (initializationError) {
+    return res.status(500).json({ 
+      error: 'Stripe initialization failed.', 
+      details: initializationError.message 
+    });
+  }
+  // --- End of new check ---
 
-    // Create a PaymentIntent with the order amount and currency
+  try {
+    const amount = 3000; // $30.00
+
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amount,
       currency: 'usd',
@@ -24,21 +52,15 @@ export default async function handler(req, res) {
       },
     });
 
-    // Send the clientSecret back to the client
     res.status(200).json({
       clientSecret: paymentIntent.client_secret,
     });
 
   } catch (err) {
-    // This is the corrected, detailed error logging
-    console.error('A critical error occurred in the Stripe API call:', err);
-    
-    // Send a detailed error response back to the client for debugging
+    console.error('Error during PaymentIntent creation:', err);
     res.status(500).json({
-      error: {
-        message: 'An internal server error occurred.',
-        details: err.message, // Provide the specific message from the error
-      }
+      error: 'An error occurred with the Stripe API.',
+      details: err.message,
     });
   }
 }
