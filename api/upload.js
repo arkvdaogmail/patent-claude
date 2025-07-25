@@ -1,11 +1,13 @@
 // In file: /api/upload.js
 
-import { createClient } from '@supabase/supabase-js';
-import { Thor, Driver, SimpleWallet } from '@vechain/sdk-core';
-import { SimpleGasPrice, TransactionHandler } from '@vechain/sdk-network';
-import formidable from 'formidable';
-import fs from 'fs';
-import crypto from 'crypto';
+const { createClient } = require('@supabase/supabase-js');
+// --- FIX: Switched VeChain imports to use require ---
+const { Thor, Driver, SimpleWallet } = require('@vechain/sdk-core');
+const { SimpleGasPrice, TransactionHandler } = require('@vechain/sdk-network');
+// --- End of Fix ---
+const formidable = require('formidable');
+const fs = require('fs');
+const crypto = require('crypto');
 
 // --- IMPORTANT: This tells Vercel how to handle the request ---
 export const config = {
@@ -14,7 +16,8 @@ export const config = {
   },
 };
 
-export default async function handler(req, res) {
+// Use module.exports for consistency with require
+module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
@@ -64,8 +67,8 @@ export default async function handler(req, res) {
     const { error: supabaseError } = await supabase.from(process.env.SUPABASE_TABLE).insert({
       tx_id: id,
       file_hash: fileHash,
-      payment_intent_id: fields.paymentIntentId?.[0], // Get the field value
-      user_id: fields.userId?.[0], // Get the field value
+      payment_intent_id: fields.paymentIntentId?.[0],
+      user_id: fields.userId?.[0],
       original_filename: documentFile.originalFilename,
     });
 
@@ -80,4 +83,4 @@ export default async function handler(req, res) {
     console.error('Upload Error:', error);
     res.status(500).json({ error: error.message || 'An internal server error occurred.' });
   }
-}
+};
