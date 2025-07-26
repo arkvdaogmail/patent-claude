@@ -4,9 +4,10 @@ import StripePayment from './components/StripePayment';
 import UploadAfterPayment from './components/UploadAfterPayment';
 import CertificatePage from './components/CertificatePage';
 import LookupPage from './components/LookupPage';
+import ApiTest from './components/ApiTest';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState('upload'); // 'upload', 'certificate', 'lookup'
+  const [currentPage, setCurrentPage] = useState('api-test'); // 'upload', 'certificate', 'lookup', 'api-test'
   const [selectedFile, setSelectedFile] = useState(null);
   const [paymentIntentId, setPaymentIntentId] = useState(null);
   const [notarizationResult, setNotarizationResult] = useState(null);
@@ -38,6 +39,12 @@ function App() {
         <h1>Document Notarization Service</h1>
         <nav className="navigation">
           <button 
+            onClick={() => setCurrentPage('api-test')}
+            className={currentPage === 'api-test' ? 'active' : ''}
+          >
+            API Test
+          </button>
+          <button 
             onClick={() => setCurrentPage('upload')}
             className={currentPage === 'upload' ? 'active' : ''}
           >
@@ -53,6 +60,10 @@ function App() {
       </header>
 
       <main className="App-main">
+        {currentPage === 'api-test' && (
+          <ApiTest />
+        )}
+
         {currentPage === 'upload' && (
           <div className="upload-flow">
             <section className="file-selection">
