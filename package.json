@@ -1,16 +1,12 @@
 {
-  "name": "vdao-core-test",
+  "name": "manus-vet-kit-starter",
   "version": "1.0.0",
-  "main": "index.js",
+  "description": "A starter kit for a Vercel serverless function.",
+  "main": "api/index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node api/index.js"
   },
   "dependencies": {
-    "axios": "^1.7.2",
-    "formidable": "^3.5.1",
-    "fs": "0.0.1-security",
-    "crypto": "^1.0.1"
+    "web3": "^4.1.2"
   }
-
-
-
+}
