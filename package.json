@@ -13,20 +13,4 @@
   }
 }```
 
-**File 2: `vercel.json`** (Tells Vercel how to run the backend API)
-```json
-{
-  "version": 2,
-  "builds": [
-    {
-      "src": "api/**/*.js",
-      "use": "@vercel/node"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
-    }
-  ]
-}
+
