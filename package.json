@@ -1,38 +1,32 @@
 {
-  "name": "patent-claude",
+  "name": "vdao-core-test",
   "version": "1.0.0",
-  "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "start": "node index.js",
-    "dev:server": "nodemon index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
   "dependencies": {
-    "@stripe/react-stripe-js": "^3.7.0",
-    "@stripe/stripe-js": "^7.4.0",
-    "@supabase/supabase-js": "^2.51.0",
-    "axios": "^1.10.0",
-    "dotenv": "^16.5.0",
-    "express": "^5.1.0",
-    "formidable": "^3.5.4",
-    "lucide-react": "^0.525.0",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "stripe": "^18.3.0"
-  },
-  "devDependencies": {
-    "@vitejs/plugin-react": "^4.6.0",
-    "rollup-plugin-node-polyfills": "^0.2.1",
-    "vite": "^7.0.3"
+    "axios": "^1.7.2",
+    "formidable": "^3.5.1",
+    "fs": "0.0.1-security",
+    "crypto": "^1.0.1"
   }
+}```
+
+**File 2: `vercel.json`** (Tells Vercel how to run the backend API)
+```json
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/**/*.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    }
+  ]
 }
-
-
