@@ -20,6 +20,9 @@
     "test:upload": "node test-upload.js",
     "test:payment": "node test-payment.js",
     "lookup": "node lookup-utility.js",
-    "lookup:list": "node lookup-utility.js --list"
+    "lookup:list": "node lookup-utility.js --list",
+    "test:vercel": "node test-vercel-deployment.js",
+    "test:env": "node test-vercel-deployment.js",
+    "verify:vercel": "node verify-vercel.js"
   }
 }
