@@ -7,6 +7,19 @@
     "start": "node api/index.js"
   },
   "dependencies": {
-    "web3": "^4.1.2"
+    "web3": "^4.1.2",
+    "@vechain/sdk-core": "^2.0.0",
+    "@vechain/connex": "^2.0.0",
+    "@vechain/connex-framework": "^2.0.0",
+    "dotenv": "^16.0.0"
+  },
+  "scripts": {
+    "start": "node api/index.js",
+    "test:vechain": "node test-vechain-upload.js",
+    "test:vechain:real": "node test-vechain-real.js",
+    "test:upload": "node test-upload.js",
+    "test:payment": "node test-payment.js",
+    "lookup": "node lookup-utility.js",
+    "lookup:list": "node lookup-utility.js --list"
   }
 }
