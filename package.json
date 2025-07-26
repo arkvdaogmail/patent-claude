@@ -4,16 +4,6 @@
   "description": "A starter kit for a Vercel serverless function.",
   "main": "api/index.js",
   "scripts": {
-    "start": "node api/index.js"
-  },
-  "dependencies": {
-    "web3": "^4.1.2",
-    "@vechain/sdk-core": "^2.0.0",
-    "@vechain/connex": "^2.0.0",
-    "@vechain/connex-framework": "^2.0.0",
-    "dotenv": "^16.0.0"
-  },
-  "scripts": {
     "start": "node api/index.js",
     "test:vechain": "node test-vechain-upload.js",
     "test:vechain:real": "node test-vechain-real.js",
@@ -24,5 +14,12 @@
     "test:vercel": "node test-vercel-deployment.js",
     "test:env": "node test-vercel-deployment.js",
     "verify:vercel": "node verify-vercel.js"
+  },
+  "dependencies": {
+    "web3": "^4.1.2",
+    "@vechain/sdk-core": "^2.0.0",
+    "@vechain/connex": "^2.0.0",
+    "@vechain/connex-framework": "^2.0.0",
+    "dotenv": "^16.0.0"
   }
 }
