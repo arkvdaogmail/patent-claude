@@ -114,7 +114,14 @@
             padding: 15px;
             margin: 20px 0;
         }
-        .blockchain-status {
+        .manual-steps {
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .vechain-info {
             background: rgba(76, 175, 80, 0.1);
             border: 1px solid rgba(76, 175, 80, 0.3);
             border-radius: 8px;
@@ -125,25 +132,25 @@
 </head>
 <body>
     <div class="container">
-        <h1>🔗 VeChain Document Notarization</h1>
+        <h1>🔗 VeChain Document Hash Generator</h1>
         
         <div class="info-box">
-            <h3>⛓️ Real VeChain Blockchain Integration:</h3>
-            <p>1. Select your document file<br>
-            2. Click "Upload & Notarize" to submit to VeChain testnet<br>
-            3. Uses prepaid gas wallet for automatic transaction<br>
-            4. <strong>Real blockchain notarization</strong> - your hash will appear on VeChain explorer!</p>
+            <h3>📋 GitHub Pages + Manual VeChain Submission:</h3>
+            <p>1. <strong>Generate hash</strong> using this tool<br>
+            2. <strong>Copy the hash</strong> from results<br>
+            3. <strong>Submit manually</strong> to VeChain using your prepaid wallet<br>
+            4. <strong>GitHub Pages limitation:</strong> Cannot run server APIs directly</p>
         </div>
         
         <div class="upload-section">
-            <h2>Upload Document for VeChain Blockchain Notarization</h2>
-            <p>Select a file to upload and permanently record on the VeChain blockchain</p>
+            <h2>Generate Document Hash for VeChain</h2>
+            <p>Select a file to generate its SHA-256 hash for VeChain blockchain notarization</p>
             
             <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png">
             <div id="fileInfo" class="file-info"></div>
             
-            <button id="uploadBtn" onclick="uploadToVeChain()" disabled>
-                ⛓️ Upload & Notarize on VeChain
+            <button id="generateBtn" onclick="generateHash()" disabled>
+                🔧 Generate Hash for VeChain
             </button>
             
             <div id="result"></div>
@@ -153,28 +160,22 @@
     <script>
         const fileInput = document.getElementById('fileInput');
         const fileInfo = document.getElementById('fileInfo');
-        const uploadBtn = document.getElementById('uploadBtn');
+        const generateBtn = document.getElementById('generateBtn');
         const result = document.getElementById('result');
-
-        // VeChain testnet configuration 
-        const VECHAIN_CONFIG = {
-            nodeUrl: 'https://testnet.veblocks.net',
-            explorerUrl: 'https://explore-testnet.vechain.org'
-        };
 
         fileInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {
                 fileInfo.innerHTML = `
-                    <div class="status">✅ File Ready for VeChain:</div>
+                    <div class="status">✅ File Ready for Hashing:</div>
                     <strong>📄 Name:</strong> ${file.name}<br>
                     <strong>📏 Size:</strong> ${(file.size / 1024).toFixed(2)} KB<br>
                     <strong>📋 Type:</strong> ${file.type || 'Unknown'}
                 `;
-                uploadBtn.disabled = false;
+                generateBtn.disabled = false;
             } else {
                 fileInfo.innerHTML = '';
-                uploadBtn.disabled = true;
+                generateBtn.disabled = true;
             }
         });
 
@@ -186,118 +187,106 @@
             return '0x' + hashHex;
         }
 
-        async function uploadToVeChain() {
+        async function generateHash() {
             const file = fileInput.files[0];
             if (!file) {
                 alert('Please select a file first');
                 return;
             }
 
-            uploadBtn.disabled = true;
-            uploadBtn.textContent = '⏳ Processing...';
-            result.innerHTML = '<div class="result"><div class="status">🔧 Generating hash and submitting to VeChain...</div></div>';
+            generateBtn.disabled = true;
+            generateBtn.textContent = '⏳ Generating...';
+            result.innerHTML = '<div class="result"><div class="status">🔧 Generating SHA-256 hash...</div></div>';
 
             try {
-                console.log('Processing file for VeChain:', file.name);
+                console.log('Generating hash for file:', file.name);
                 
-                // Generate SHA-256 hash
                 const fileHash = await sha256(file);
-                
+                const timestamp = new Date().toISOString();
+
+                console.log('Hash generated:', fileHash);
+
                 result.innerHTML = `
                     <div class="result">
-                        <div class="status">📡 Connecting to VeChain testnet...</div>
-                    </div>
-                `;
-
-                // Submit to VeChain via your prepaid API
-                const response = await fetch('/api/vechain-submit', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        fileHash: fileHash,
-                        fileName: file.name,
-                        fileSize: file.size,
-                        timestamp: new Date().toISOString()
-                    })
-                });
-
-                if (!response.ok) {
-                    // Fallback: Show hash but explain API limitation on GitHub Pages
-                    throw new Error('GitHub Pages limitation - cannot connect to VeChain API');
-                }
-
-                const data = await response.json();
-
-                if (data.success) {
-                    result.innerHTML = `
-                        <div class="result">
-                            <h3 class="success">🎉 SUCCESS! Document Notarized on VeChain!</h3>
-                            <p><strong>📄 File Name:</strong> ${file.name}</p>
-                            <p><strong>📊 File Size:</strong> ${file.size} bytes</p>
-                            <p><strong>🔗 SHA-256 Hash:</strong><br><code>${fileHash}</code></p>
-                            <p><strong>⛓️ VeChain TX ID:</strong><br><code>${data.transactionId}</code></p>
-                            <p><strong>🌐 Block Number:</strong> ${data.blockNumber}</p>
-                            
-                            <div class="blockchain-status">
-                                <h4>🔍 Verification:</h4>
-                                <p>✅ Transaction confirmed on VeChain testnet<br>
-                                ✅ Document hash permanently recorded<br>
-                                ✅ Cryptographic proof of existence established</p>
-                                
-                                <button onclick="window.open('${VECHAIN_CONFIG.explorerUrl}/transactions/${data.transactionId}', '_blank')" 
-                                        style="background: #2196F3; margin-top: 10px;">
-                                    🔍 View on VeChain Explorer
-                                </button>
-                                
-                                <button onclick="copyHash('${fileHash}')" style="background: #FF9800; margin-top: 10px;">
-                                    📋 Copy Hash
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                } else {
-                    throw new Error(data.error || 'VeChain submission failed');
-                }
-
-            } catch (error) {
-                console.error('VeChain upload error:', error);
-                
-                // Generate hash anyway and show GitHub Pages limitation
-                const fileHash = await sha256(file);
-                
-                result.innerHTML = `
-                    <div class="result error">
-                        <h3>⚠️ GitHub Pages Limitation</h3>
-                        <p><strong>Your file hash was generated:</strong></p>
-                        <p><code>${fileHash}</code></p>
+                        <h3 class="success">✅ Hash Generated Successfully!</h3>
+                        <p><strong>📄 File Name:</strong> ${file.name}</p>
+                        <p><strong>📊 File Size:</strong> ${file.size} bytes</p>
+                        <p><strong>🔗 SHA-256 Hash:</strong><br><code id="hashValue">${fileHash}</code></p>
+                        <p><strong>📅 Generated:</strong> ${timestamp}</p>
                         
-                        <div class="info-box">
-                            <h4>📋 Next Steps for Real VeChain Notarization:</h4>
-                            <p>1. Copy the hash above<br>
-                            2. Deploy this app to a server with VeChain API support<br>
-                            3. Use your prepaid wallet to submit the hash<br>
-                            4. <strong>Note:</strong> GitHub Pages can't run server-side VeChain APIs</p>
+                        <div class="manual-steps">
+                            <h4>🚀 Submit to VeChain Manually:</h4>
+                            <p><strong>Your Wallet:</strong> 0xB0A2231fcBc705742E565F11c92E781f53F70Bb2<br>
+                            <strong>Network:</strong> VeChain Testnet<br>
+                            <strong>Node:</strong> https://testnet.vechain.org</p>
+                            
+                            <p><strong>Transaction Details:</strong><br>
+                            • <strong>To:</strong> 0xB0A2231fcBc705742E565F11c92E781f53F70Bb2 (your address)<br>
+                            • <strong>Value:</strong> 0 VET<br>
+                            • <strong>Data:</strong> <code>${fileHash}</code><br>
+                            • <strong>Comment:</strong> Document notarization: ${file.name}</p>
+                        </div>
+                        
+                        <div class="vechain-info">
+                            <h4>📋 Manual Submission Options:</h4>
+                            <p>1. <strong>VeChain Sync:</strong> Create transaction with data field<br>
+                            2. <strong>VeChain Thor:</strong> Use your mnemonic with connex<br>
+                            3. <strong>Custom script:</strong> Use VeChain SDK with your wallet</p>
                         </div>
                         
                         <button onclick="copyHash('${fileHash}')" style="background: #FF9800; margin-top: 10px;">
-                            📋 Copy Hash for Manual Submission
+                            📋 Copy Hash
                         </button>
+                        
+                        <button onclick="copyTransactionData('${fileHash}', '${file.name}')" style="background: #2196F3; margin-top: 10px;">
+                            📋 Copy Transaction Data
+                        </button>
+                        
+                        <button onclick="openExplorer()" style="background: #9C27B0; margin-top: 10px;">
+                            🔍 Open VeChain Explorer
+                        </button>
+                    </div>
+                `;
+
+            } catch (error) {
+                console.error('Hash generation error:', error);
+                result.innerHTML = `
+                    <div class="result error">
+                        <h3>❌ Hash Generation Failed</h3>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                        <p><em>Check browser console for details</em></p>
                     </div>
                 `;
             }
 
-            uploadBtn.disabled = false;
-            uploadBtn.textContent = '⛓️ Upload & Notarize on VeChain';
+            generateBtn.disabled = false;
+            generateBtn.textContent = '🔧 Generate Hash for VeChain';
         }
 
         function copyHash(hash) {
             navigator.clipboard.writeText(hash).then(function() {
-                alert('Hash copied to clipboard! You can now submit this to VeChain manually.');
+                alert('Hash copied to clipboard! Use this as transaction data in VeChain.');
             }, function(err) {
                 alert('Could not copy hash: ' + err);
             });
+        }
+
+        function copyTransactionData(hash, fileName) {
+            const txData = `{
+  "to": "0xB0A2231fcBc705742E565F11c92E781f53F70Bb2",
+  "value": 0,
+  "data": "${hash}",
+  "comment": "Document notarization: ${fileName}"
+}`;
+            navigator.clipboard.writeText(txData).then(function() {
+                alert('Transaction data copied! Use this for VeChain submission.');
+            }, function(err) {
+                alert('Could not copy transaction data: ' + err);
+            });
+        }
+
+        function openExplorer() {
+            window.open('https://explore-testnet.vechain.org/', '_blank');
         }
     </script>
 </body>
