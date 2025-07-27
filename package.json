@@ -1,8 +1,0 @@
-{
-  "name": "vechain-upload",
-  "version": "1.0.0",
-  "description": "VeChain Document Upload",
-  "dependencies": {
-    "formidable": "^3.5.1"
-  }
-}
