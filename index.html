@@ -31,6 +31,19 @@
             font-size: 2.5em;
             text-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
+        .navigation {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .nav-link {
+            color: #61dafb;
+            text-decoration: none;
+            margin: 0 15px;
+            font-weight: bold;
+        }
+        .nav-link:hover {
+            text-decoration: underline;
+        }
         .upload-section { 
             background: rgba(255,255,255,0.1); 
             padding: 30px; 
@@ -127,6 +140,10 @@
 <body>
     <div class="container">
         <h1>🔗 VeChain Document Notarization</h1>
+        
+        <div class="navigation">
+            <a href="lookup.html" class="nav-link">🔍 Lookup Transactions</a>
+        </div>
         
         <div class="info-box">
             <h3>⛓️ Real VeChain Blockchain Notarization:</h3>
@@ -252,6 +269,10 @@
                             <button onclick="openExplorer()" style="background: #9C27B0; margin-top: 10px;">
                                 🔍 Open VeChain Explorer
                             </button>
+                            
+                            <button onclick="lookupHash('${fileHash}')" style="background: #795548; margin-top: 10px;">
+                                🔍 Lookup This Hash
+                            </button>
                         </div>
                         
                         <div class="info-box">
@@ -260,7 +281,8 @@
                             2. <strong>Use VeChain Sync</strong> or custom script<br>
                             3. <strong>Submit transaction</strong> with your mnemonic<br>
                             4. <strong>Get real transaction ID</strong><br>
-                            5. <strong>Verify on explorer</strong> → Your hash will appear!</p>
+                            5. <strong>Verify on explorer</strong> → Your hash will appear!<br>
+                            6. <strong>Use lookup page</strong> to verify transactions</p>
                         </div>
                     </div>
                 `;
@@ -309,6 +331,10 @@ Network: VeChain Testnet (https://testnet.vechain.org)`;
 
         function openExplorer() {
             window.open('https://explore-testnet.vechain.org/', '_blank');
+        }
+
+        function lookupHash(hash) {
+            window.location.href = `lookup.html?search=${encodeURIComponent(hash)}`;
         }
     </script>
 </body>
