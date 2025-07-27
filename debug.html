@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Debug React Loading</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f0f0f0; }
+        .log { background: white; padding: 10px; margin: 5px 0; border-radius: 4px; }
+        .error { background: #ffebee; border-left: 4px solid #f44336; }
+        .success { background: #e8f5e9; border-left: 4px solid #4caf50; }
+    </style>
+</head>
+<body>
+    <h1>Debug React Loading</h1>
+    <div class="log">Starting debug...</div>
+    <div id="root">Loading React...</div>
+
+    <script>
+        function log(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `log ${type}`;
+            div.textContent = new Date().toISOString() + ': ' + message;
+            document.body.appendChild(div);
+            console.log(message);
+        }
+
+        log('Debug script starting');
+        
+        // Check if root element exists
+        const root = document.getElementById('root');
+        if (root) {
+            log('Root element found', 'success');
+        } else {
+            log('Root element NOT found', 'error');
+        }
+
+        // Try to load React manually
+        window.addEventListener('error', function(e) {
+            log('JavaScript Error: ' + e.message + ' at ' + e.filename + ':' + e.lineno, 'error');
+        });
+
+        log('About to load React scripts...');
+    </script>
+
+    <!-- Load the actual React files -->
+    <link rel="modulepreload" crossorigin href="/assets/vendor-b1791c80.js">
+    <link rel="stylesheet" href="/assets/index-85a71158.css">
+    <script type="module" crossorigin src="/assets/index-28999577.js"></script>
+    
+    <script type="module">
+        import('/assets/index-28999577.js')
+            .then(() => {
+                setTimeout(() => {
+                    const rootContent = document.getElementById('root').innerHTML;
+                    if (rootContent && rootContent.trim() !== 'Loading React...') {
+                        log('React loaded successfully!', 'success');
+                        log('Root content: ' + rootContent.substring(0, 100), 'success');
+                    } else {
+                        log('React did not load - root still empty', 'error');
+                    }
+                }, 1000);
+            })
+            .catch(err => {
+                log('Failed to import React module: ' + err.message, 'error');
+            });
+    </script>
+</body>
+</html>
