@@ -1,0 +1,32 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "*.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "lookup-data/**",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/lookup",
+      "dest": "/lookup.html"
+    },
+    {
+      "src": "/lookup-data/(.*)",
+      "dest": "/lookup-data/$1"
+    }
+  ],
+  "functions": {},
+  "env": {
+    "VECHAIN_NODE_URL": "https://testnet.veblocks.net",
+    "NODE_ENV": "production"
+  }
+}
