@@ -1,24 +1,18 @@
 import { useState } from 'react';
 import './App.css';
-import StripePayment from './components/StripePayment';
 import UploadAfterPayment from './components/UploadAfterPayment';
 import CertificatePage from './components/CertificatePage';
 import LookupPage from './components/LookupPage';
 import ApiTest from './components/ApiTest';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState('api-test'); // 'upload', 'certificate', 'lookup', 'api-test'
+  const [currentPage, setCurrentPage] = useState('upload'); 
   const [selectedFile, setSelectedFile] = useState(null);
-  const [paymentIntentId, setPaymentIntentId] = useState(null);
   const [notarizationResult, setNotarizationResult] = useState(null);
 
   const handleFileSelect = (event) => {
     const file = event.target.files[0];
     setSelectedFile(file);
-  };
-
-  const handlePaymentSuccess = (intentId) => {
-    setPaymentIntentId(intentId);
   };
 
   const handleNotarizationSuccess = (result) => {
@@ -29,7 +23,6 @@ function App() {
   const resetToUpload = () => {
     setCurrentPage('upload');
     setSelectedFile(null);
-    setPaymentIntentId(null);
     setNotarizationResult(null);
   };
 
@@ -39,16 +32,16 @@ function App() {
         <h1>Document Notarization Service</h1>
         <nav className="navigation">
           <button 
+            onClick={() => setCurrentPage('upload')}
+            className={currentPage === 'upload' ? 'active' : ''}
+          >
+            Upload Document
+          </button>
+          <button 
             onClick={() => setCurrentPage('api-test')}
             className={currentPage === 'api-test' ? 'active' : ''}
           >
             API Test
-          </button>
-          <button 
-            onClick={() => setCurrentPage('upload')}
-            className={currentPage === 'upload' ? 'active' : ''}
-          >
-            Notarize Document
           </button>
           <button 
             onClick={() => setCurrentPage('lookup')}
@@ -60,67 +53,53 @@ function App() {
       </header>
 
       <main className="App-main">
-        {currentPage === 'api-test' && (
-          <ApiTest />
-        )}
-
         {currentPage === 'upload' && (
           <div className="upload-flow">
             <section className="file-selection">
-              <h2>1. Select Your Document</h2>
-              <p>Choose the document you wish to notarize on the VeChain blockchain.</p>
+              <h2>Select Document to Notarize</h2>
+              <p>Choose a document to hash and store on VeChain blockchain (payment skipped for testing)</p>
               <input
                 type="file"
                 onChange={handleFileSelect}
-                accept=".pdf,.doc,.docx,.txt"
+                accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png"
                 className="file-input"
               />
               {selectedFile && (
-                <p className="file-selected">
-                  Selected: <strong>{selectedFile.name}</strong>
-                </p>
+                <div>
+                  <p className="file-selected">
+                    Selected: <strong>{selectedFile.name}</strong>
+                  </p>
+                  <p>Size: {(selectedFile.size / 1024).toFixed(2)} KB</p>
+                  <p>Type: {selectedFile.type || 'Unknown'}</p>
+                </div>
               )}
             </section>
 
             {selectedFile && (
-              <section className="payment-section">
-                <h2>2. Review and Pay</h2>
-                <p>You have selected: <strong>{selectedFile.name}</strong></p>
-                <p>Proceed with payment to notarize this document.</p>
-                <StripePayment 
-                  onPaymentSuccess={handlePaymentSuccess}
-                  fileName={selectedFile.name}
-                />
-              </section>
-            )}
-
-            {paymentIntentId && (
               <section className="notarization-section">
-                <h2>3. Notarize and Publish</h2>
+                <h2>Process with VeChain</h2>
                 <UploadAfterPayment
-                  fileToUpload={selectedFile}
-                  paymentIntentId={paymentIntentId}
-                  onSuccess={handleNotarizationSuccess}
+                  selectedFile={selectedFile}
+                  onNotarizationSuccess={handleNotarizationSuccess}
                 />
               </section>
             )}
           </div>
         )}
 
-        {currentPage === 'certificate' && (
-          <div className="certificate-flow">
-            <CertificatePage 
-              result={notarizationResult}
-              fileName={selectedFile?.name}
-            />
-            <button onClick={resetToUpload} className="new-document-button">
-              Notarize Another Document
-            </button>
-          </div>
+        {currentPage === 'api-test' && (
+          <ApiTest />
         )}
 
         {currentPage === 'lookup' && (
           <LookupPage />
+        )}
+
+        {currentPage === 'certificate' && notarizationResult && (
+          <CertificatePage 
+            certificateData={notarizationResult}
+            onNewDocument={resetToUpload}
+          />
         )}
       </main>
     </div>

@@ -15,8 +15,7 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          vendor: ['react', 'react-dom'],
-          stripe: ['@stripe/react-stripe-js', '@stripe/stripe-js']
+          vendor: ['react', 'react-dom']
         }
       }
     }
