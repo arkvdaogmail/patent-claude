@@ -1,78 +1,81 @@
-import formidable from 'formidable';
-import fs from 'fs';
-import crypto from 'crypto';
-import { Framework } from '@vechain/connex';
-import { Driver, SimpleWallet } from '@vechain/connex.driver-nodejs';
+const formidable = require('formidable');
+const fs = require('fs');
+const crypto = require('crypto');
 
-// Set up VeChain connection details from environment variables
-const NODE_URL = process.env.VECHAIN_NODE_URL;
-const PRIVATE_KEY = process.env.VECHAIN_PRIVATE_KEY;
-
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
+// For now, let's create a simple API that doesn't depend on VeChain to test the basic upload
+// We'll add VeChain back once the basic upload works
 
 export default async function handler(req, res) {
+  // Add CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  if (!NODE_URL || !PRIVATE_KEY) {
-    return res.status(500).json({ error: 'VeChain node URL or private key not set.' });
-  }
-
   try {
-    const form = formidable();
-    const { files } = await new Promise((resolve, reject) => {
+    console.log('API upload called');
+    
+    const form = formidable({
+      maxFiles: 1,
+      maxFileSize: 10 * 1024 * 1024, // 10MB
+    });
+
+    const { fields, files } = await new Promise((resolve, reject) => {
       form.parse(req, (err, fields, files) => {
-        if (err) return reject(err);
+        if (err) {
+          console.error('Form parse error:', err);
+          return reject(err);
+        }
+        console.log('Form parsed successfully');
         resolve({ fields, files });
       });
     });
 
-    const documentFile = files.document?.[0];
+    console.log('Files received:', Object.keys(files));
+    
+    const documentFile = files.document?.[0] || files.file?.[0];
     if (!documentFile) {
+      console.log('No file found in upload');
       return res.status(400).json({ error: 'No document file uploaded.' });
     }
 
-    // 1. Calculate SHA-256 hash of the file
+    console.log('File details:', {
+      name: documentFile.originalFilename,
+      size: documentFile.size,
+      type: documentFile.mimetype
+    });
+
+    // Calculate SHA-256 hash of the file
     const fileData = fs.readFileSync(documentFile.filepath);
     const fileHash = '0x' + crypto.createHash('sha256').update(fileData).digest('hex');
+    
+    console.log('File hash calculated:', fileHash);
 
-    // 2. Set up the wallet and blockchain connection
-    const wallet = new SimpleWallet();
-    const imported = wallet.import(PRIVATE_KEY);
-    const driver = await Driver.connect(NODE_URL, wallet);
-    const connex = new Framework(driver);
+    // For now, return a mock transaction ID instead of using VeChain
+    const mockTxId = 'mock_tx_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 
-    // 3. Prepare transaction (send 0 VET with fileHash in data field)
-    const txBody = {
-      to: imported, // send to self
-      value: 0,
-      data: fileHash, // file hash as data
-    };
-
-    // 4. Sign and send transaction
-    const txSigningService = connex.vendor.sign('tx');
-    txSigningService.comment('Notarize document hash');
-    const txRequest = await txSigningService.request([txBody]);
-    const txid = txRequest.txid;
-
-    // 5. Optional: Wait for confirmation (optional, can remove if not needed)
-    // await connex.thor.transaction(txid).getReceipt();
-
-    // 6. Respond with real transaction ID and hash
+    // Respond with the hash and mock transaction ID
     res.status(200).json({
       success: true,
-      message: 'Document notarized on VeChain!',
+      message: 'Document processed successfully!',
       fileHash: fileHash,
-      transactionId: txid,
+      transactionId: mockTxId,
+      fileName: documentFile.originalFilename,
+      fileSize: documentFile.size
     });
 
   } catch (error) {
-    console.error('Core Engine Error:', error);
-    res.status(500).json({ error: error.message || 'An internal server error occurred.' });
+    console.error('API Error:', error);
+    res.status(500).json({ 
+      error: error.message || 'An internal server error occurred.',
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 }
