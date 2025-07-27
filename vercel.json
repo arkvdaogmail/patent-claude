@@ -1,0 +1,20 @@
+{
+  "functions": {
+    "api/upload-hash.js": {
+      "runtime": "@vercel/node"
+    },
+    "api/verify-hash.js": {
+      "runtime": "@vercel/node"
+    }
+  },
+  "env": {
+    "VECHAIN_NODE_URL": "@vechain_node_url",
+    "VECHAIN_PRIVATE_KEY": "@vechain_private_key"
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    }
+  ]
+}
