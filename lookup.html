@@ -4,6 +4,9 @@
     <title>VeChain Transaction Lookup</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- VeChain SDK for real blockchain queries -->
+    <script src="https://unpkg.com/@vechain/sdk-core@2/dist/index.umd.js"></script>
+    <script src="https://unpkg.com/@vechain/sdk-network@2/dist/index.umd.js"></script>
     <style>
         * { box-sizing: border-box; }
         body { 
@@ -35,65 +38,60 @@
             padding: 30px; 
             border-radius: 10px; 
             margin: 20px 0; 
-            border: 1px solid rgba(255,255,255,0.2);
         }
         input[type="text"] { 
             width: 100%; 
             padding: 15px; 
-            margin: 15px 0; 
+            border: 2px solid rgba(255,255,255,0.3); 
             border-radius: 8px; 
-            border: 2px solid rgba(255,255,255,0.3);
             background: rgba(255,255,255,0.1);
             color: white;
             font-size: 16px;
-            font-family: 'Courier New', monospace;
+            margin-bottom: 15px;
         }
         input[type="text"]::placeholder {
             color: rgba(255,255,255,0.7);
         }
         button { 
-            background: linear-gradient(45deg, #4CAF50, #45a049);
+            background: linear-gradient(45deg, #4CAF50, #45a049); 
             color: white; 
             padding: 15px 30px; 
             border: none; 
             border-radius: 8px; 
             cursor: pointer; 
+            font-size: 16px; 
             font-weight: bold;
-            margin: 15px 5px;
-            font-size: 16px;
+            margin: 5px;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
         button:hover { 
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.6);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
         }
         button:disabled { 
             background: #666; 
             cursor: not-allowed; 
             transform: none;
-            box-shadow: none;
         }
         .result { 
             background: rgba(255,255,255,0.1); 
             padding: 20px; 
             border-radius: 8px; 
-            margin: 20px 0; 
-            border-left: 4px solid #4CAF50;
+            margin-top: 20px;
         }
-        .error { 
-            border-left-color: #f44336; 
+        .result.error { 
             background: rgba(244, 67, 54, 0.1); 
+            border: 1px solid rgba(244, 67, 54, 0.3);
         }
-        .success { color: #4CAF50; }
-        .warning { color: #FF9800; }
-        .info { color: #2196F3; }
-        code { 
-            background: rgba(0,0,0,0.3); 
-            padding: 2px 6px; 
-            border-radius: 3px; 
-            font-family: 'Courier New', monospace;
-            word-break: break-all;
+        .success { 
+            color: #4CAF50; 
+        }
+        .warning { 
+            color: #FF9800; 
+        }
+        .info { 
+            color: #2196F3; 
         }
         .info-box {
             background: rgba(33, 150, 243, 0.1);
@@ -137,6 +135,21 @@
         .nav-link:hover {
             text-decoration: underline;
         }
+        .block-details {
+            background: rgba(156, 39, 176, 0.1);
+            border: 1px solid rgba(156, 39, 176, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .status-confirmed {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        .status-pending {
+            color: #FF9800;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -149,7 +162,7 @@
         
         <div class="info-box">
             <h3>🔎 Verify Your Document on VeChain:</h3>
-            <p>Enter a <strong>Transaction ID</strong> or <strong>Document Hash</strong> to view blockchain details and verify document notarization.</p>
+            <p>Enter a <strong>Transaction ID</strong> or <strong>Document Hash</strong> to view real blockchain details and verify document notarization.</p>
         </div>
         
         <div class="search-section">
@@ -190,17 +203,21 @@
 
             lookupBtn.disabled = true;
             lookupBtn.textContent = '🔍 Searching...';
-            result.innerHTML = '<div class="result"><div class="info">🔍 Searching VeChain blockchain...</div></div>';
+            result.innerHTML = '<div class="result"><div class="info">🔍 Connecting to VeChain blockchain...</div></div>';
 
             try {
+                // Initialize VeChain SDK
+                const { ThorClient } = VeChainSDKNetwork;
+                const client = new ThorClient(VECHAIN_CONFIG.nodeUrl);
+
                 // Determine if it's a transaction ID or hash
                 const isTransactionId = query.startsWith('0x') && query.length === 66;
                 const isHash = query.startsWith('0x') && (query.length === 66 || query.length === 64);
 
                 if (isTransactionId) {
-                    await lookupByTransactionId(query);
+                    await lookupByTransactionId(client, query);
                 } else if (isHash) {
-                    await lookupByHash(query);
+                    await lookupByHash(client, query);
                 } else {
                     throw new Error('Invalid format. Please enter a valid Transaction ID (0x...) or Document Hash (0x...)');
                 }
@@ -212,6 +229,14 @@
                         <h3>❌ Lookup Failed</h3>
                         <p><strong>Error:</strong> ${error.message}</p>
                         <p><em>Make sure the Transaction ID or Hash is correct and exists on VeChain testnet.</em></p>
+                        
+                        <div class="info-box">
+                            <h4>🔧 Troubleshooting:</h4>
+                            <p>• Check if the transaction ID is 66 characters (with 0x)<br>
+                            • Verify the transaction exists on VeChain testnet<br>
+                            • Make sure you're using testnet transactions<br>
+                            • Try the VeChain Explorer link manually</p>
+                        </div>
                     </div>
                 `;
             }
@@ -220,14 +245,42 @@
             lookupBtn.textContent = '🔍 Lookup on VeChain';
         }
 
-        async function lookupByTransactionId(txId) {
+        async function lookupByTransactionId(client, txId) {
             try {
-                // For GitHub Pages, we'll show what the transaction should contain
-                // In a real implementation, you'd call VeChain API here
+                result.innerHTML = '<div class="result"><div class="info">📡 Fetching transaction from VeChain...</div></div>';
                 
+                // Get transaction details from VeChain
+                const transaction = await client.transactions.getTransaction(txId);
+                
+                if (!transaction) {
+                    throw new Error('Transaction not found on VeChain blockchain');
+                }
+
+                result.innerHTML = '<div class="result"><div class="info">📦 Fetching block details...</div></div>';
+                
+                // Get block details if transaction is in a block
+                let blockDetails = null;
+                let status = 'pending';
+                if (transaction.meta && transaction.meta.blockID) {
+                    try {
+                        blockDetails = await client.blocks.getBlock(transaction.meta.blockID);
+                        status = 'confirmed';
+                    } catch (e) {
+                        console.log('Block not found yet, transaction may be pending');
+                    }
+                }
+
+                // Extract document hash from transaction data
+                const documentHash = transaction.clauses && transaction.clauses[0] ? transaction.clauses[0].data : 'No data';
+                const isDocumentNotarization = transaction.clauses && transaction.clauses[0] && 
+                                             transaction.clauses[0].to === transaction.origin && 
+                                             transaction.clauses[0].value === '0x0' &&
+                                             transaction.clauses[0].data && 
+                                             transaction.clauses[0].data.startsWith('0x');
+
                 result.innerHTML = `
                     <div class="result">
-                        <h3 class="success">🔍 Transaction Lookup Result</h3>
+                        <h3 class="success">✅ Transaction Found on VeChain!</h3>
                         
                         <div class="transaction-details">
                             <h4>📋 Transaction Details:</h4>
@@ -237,33 +290,69 @@
                             </div>
                             <div class="detail-row">
                                 <span class="detail-label">Status:</span>
-                                <span class="detail-value success">✅ Confirmed</span>
+                                <span class="detail-value ${status === 'confirmed' ? 'status-confirmed' : 'status-pending'}">
+                                    ${status === 'confirmed' ? '✅ Confirmed' : '⏳ Pending'}
+                                </span>
                             </div>
                             <div class="detail-row">
                                 <span class="detail-label">Network:</span>
                                 <span class="detail-value">VeChain Testnet</span>
                             </div>
                             <div class="detail-row">
-                                <span class="detail-label">Block Number:</span>
-                                <span class="detail-value">Pending verification...</span>
-                            </div>
-                            <div class="detail-row">
                                 <span class="detail-label">From:</span>
-                                <span class="detail-value">0xB0A2231fcBc705742E565F11c92E781f53F70Bb2</span>
+                                <span class="detail-value">${transaction.origin}</span>
                             </div>
                             <div class="detail-row">
                                 <span class="detail-label">To:</span>
-                                <span class="detail-value">0xB0A2231fcBc705742E565F11c92E781f53F70Bb2</span>
+                                <span class="detail-value">${transaction.clauses[0]?.to || 'N/A'}</span>
                             </div>
                             <div class="detail-row">
                                 <span class="detail-label">Value:</span>
-                                <span class="detail-value">0 VET</span>
+                                <span class="detail-value">${parseInt(transaction.clauses[0]?.value || '0x0', 16)} VET</span>
                             </div>
                             <div class="detail-row">
+                                <span class="detail-label">Gas Used:</span>
+                                <span class="detail-value">${transaction.gas}</span>
+                            </div>
+                            ${documentHash !== 'No data' ? `
+                            <div class="detail-row">
                                 <span class="detail-label">Document Hash:</span>
-                                <span class="detail-value">Check transaction data field</span>
+                                <span class="detail-value success">${documentHash}</span>
+                            </div>
+                            ` : ''}
+                        </div>
+
+                        ${blockDetails ? `
+                        <div class="block-details">
+                            <h4>🧱 Block Information:</h4>
+                            <div class="detail-row">
+                                <span class="detail-label">Block Number:</span>
+                                <span class="detail-value">${blockDetails.number}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Block ID:</span>
+                                <span class="detail-value">${blockDetails.id}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Timestamp:</span>
+                                <span class="detail-value">${new Date(blockDetails.timestamp * 1000).toISOString()}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Total Transactions:</span>
+                                <span class="detail-value">${blockDetails.transactions.length}</span>
                             </div>
                         </div>
+                        ` : ''}
+
+                        ${isDocumentNotarization ? `
+                        <div class="info-box">
+                            <h4>📄 Document Notarization Detected!</h4>
+                            <p>✅ This transaction appears to be a document notarization<br>
+                            ✅ Document hash: <code>${documentHash}</code><br>
+                            ✅ Self-transaction (same from/to address)<br>
+                            ✅ Zero value transaction (hash storage only)</p>
+                        </div>
+                        ` : ''}
 
                         <div class="info-box">
                             <h4>🔗 Verification Links:</h4>
@@ -273,24 +362,24 @@
                             <button onclick="copyToClipboard('${txId}')" style="background: #FF9800; margin: 5px;">
                                 📋 Copy Transaction ID
                             </button>
-                        </div>
-
-                        <div class="info-box">
-                            <h4>⚠️ Manual Verification Required:</h4>
-                            <p>Due to GitHub Pages limitations, automatic blockchain queries are not available. Please use the VeChain Explorer link above to verify the actual transaction details.</p>
+                            ${documentHash !== 'No data' ? `
+                            <button onclick="copyToClipboard('${documentHash}')" style="background: #4CAF50; margin: 5px;">
+                                📋 Copy Document Hash
+                            </button>
+                            ` : ''}
                         </div>
                     </div>
                 `;
 
             } catch (error) {
-                throw new Error('Transaction not found or network error');
+                throw new Error(`Transaction lookup failed: ${error.message}`);
             }
         }
 
-        async function lookupByHash(hash) {
+        async function lookupByHash(client, hash) {
             result.innerHTML = `
                 <div class="result">
-                    <h3 class="info">🔍 Document Hash Lookup</h3>
+                    <h3 class="info">🔍 Document Hash Analysis</h3>
                     
                     <div class="transaction-details">
                         <h4>📄 Document Hash Details:</h4>
@@ -307,17 +396,17 @@
                             <span class="detail-value">${hash.length} characters</span>
                         </div>
                         <div class="detail-row">
-                            <span class="detail-label">Status:</span>
-                            <span class="detail-value warning">⏳ Searching for transactions...</span>
+                            <span class="detail-label">Format:</span>
+                            <span class="detail-value">${hash.startsWith('0x') ? 'Hexadecimal (0x prefix)' : 'Hexadecimal'}</span>
                         </div>
                     </div>
 
                     <div class="info-box">
-                        <h4>🔍 Search for This Hash:</h4>
-                        <p>To find transactions containing this document hash, you can:</p>
-                        <p>1. <strong>Search VeChain Explorer</strong> for transactions with this hash in the data field</p>
-                        <p>2. <strong>Check your wallet history</strong> for transactions you submitted</p>
-                        <p>3. <strong>Use VeChain API</strong> to search transaction data fields</p>
+                        <h4>🔍 How to Find Transactions with This Hash:</h4>
+                        <p>To find VeChain transactions containing this document hash:</p>
+                        <p>1. <strong>Use VeChain Explorer</strong> - Search for transactions with this hash in the data field</p>
+                        <p>2. <strong>Check wallet history</strong> - Look through transactions from address: 0xB0A2231fcBc705742E565F11c92E781f53F70Bb2</p>
+                        <p>3. <strong>API Search</strong> - Use VeChain API to search transaction data fields</p>
                         
                         <button onclick="searchHashInExplorer('${hash}')" style="background: #9C27B0; margin: 5px;">
                             🔍 Search in VeChain Explorer
@@ -325,13 +414,21 @@
                         <button onclick="copyToClipboard('${hash}')" style="background: #FF9800; margin: 5px;">
                             📋 Copy Hash
                         </button>
+                        <button onclick="searchWalletTransactions()" style="background: #795548; margin: 5px;">
+                            📱 View Wallet Transactions
+                        </button>
+                    </div>
+
+                    <div class="info-box">
+                        <h4>💡 Pro Tip:</h4>
+                        <p>If you just notarized this document, you should have received a <strong>Transaction ID</strong>. Use that Transaction ID instead for direct lookup!</p>
                     </div>
                 </div>
             `;
         }
 
         function lookupExample() {
-            // Example from your lookup data
+            // You can update this with a real transaction ID from your testing
             searchInput.value = '0xa16a3f4f9ae4e18961b58511e10ae3c7e2de2419a3afa071f4f245d4643303c1';
             lookupTransaction();
         }
@@ -342,14 +439,18 @@
 
         function searchHashInExplorer(hash) {
             window.open(`${VECHAIN_CONFIG.explorerUrl}/`, '_blank');
-            alert(`Search for transactions containing this hash in the data field: ${hash}`);
+            alert(`💡 In the VeChain Explorer, search for transactions containing this hash: ${hash}\n\nLook for transactions from wallet: 0xB0A2231fcBc705742E565F11c92E781f53F70Bb2`);
+        }
+
+        function searchWalletTransactions() {
+            window.open(`${VECHAIN_CONFIG.explorerUrl}/accounts/0xB0A2231fcBc705742E565F11c92E781f53F70Bb2`, '_blank');
         }
 
         function copyToClipboard(text) {
             navigator.clipboard.writeText(text).then(function() {
-                alert('Copied to clipboard!');
+                alert('✅ Copied to clipboard!');
             }, function(err) {
-                alert('Could not copy: ' + err);
+                alert('❌ Could not copy: ' + err);
             });
         }
 
