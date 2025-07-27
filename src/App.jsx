@@ -79,8 +79,9 @@ function App() {
               <section className="notarization-section">
                 <h2>Process with VeChain</h2>
                 <UploadAfterPayment
-                  selectedFile={selectedFile}
-                  onNotarizationSuccess={handleNotarizationSuccess}
+                  fileToUpload={selectedFile}
+                  paymentIntentId="test-payment-skipped"
+                  onSuccess={handleNotarizationSuccess}
                 />
               </section>
             )}
@@ -97,7 +98,8 @@ function App() {
 
         {currentPage === 'certificate' && notarizationResult && (
           <CertificatePage 
-            certificateData={notarizationResult}
+            result={notarizationResult}
+            fileName={selectedFile?.name}
             onNewDocument={resetToUpload}
           />
         )}
