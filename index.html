@@ -1,68 +1,126 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Document Upload - VeChain Notarization</title>
+    <title>VeChain Document Notarization</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
+        * { box-sizing: border-box; }
         body { 
-            font-family: Arial, sans-serif; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
             padding: 20px; 
-            background: #282c34; 
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
             color: white;
             margin: 0;
+            min-height: 100vh;
         }
-        .container { max-width: 800px; margin: 0 auto; }
-        h1 { text-align: center; color: #61dafb; }
+        .container { 
+            max-width: 800px; 
+            margin: 0 auto; 
+            background: rgba(255,255,255,0.1);
+            padding: 40px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+        h1 { 
+            text-align: center; 
+            color: #ffffff; 
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
         .upload-section { 
-            background: #3a3a3a; 
-            padding: 20px; 
-            border-radius: 8px; 
+            background: rgba(255,255,255,0.1); 
+            padding: 30px; 
+            border-radius: 10px; 
             margin: 20px 0; 
+            border: 1px solid rgba(255,255,255,0.2);
         }
         input[type="file"] { 
             width: 100%; 
-            padding: 10px; 
-            margin: 10px 0; 
-            border-radius: 4px; 
-            border: 1px solid #555;
-            background: #1a1a1a;
+            padding: 15px; 
+            margin: 15px 0; 
+            border-radius: 8px; 
+            border: 2px solid rgba(255,255,255,0.3);
+            background: rgba(255,255,255,0.1);
             color: white;
+            font-size: 16px;
+        }
+        input[type="file"]::-webkit-file-upload-button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 10px;
         }
         button { 
-            background: #61dafb; 
-            color: #282c34; 
-            padding: 12px 24px; 
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white; 
+            padding: 15px 30px; 
             border: none; 
-            border-radius: 4px; 
+            border-radius: 8px; 
             cursor: pointer; 
             font-weight: bold;
-            margin: 10px 5px;
+            margin: 15px 5px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
         }
-        button:hover { background: #4fa8c5; }
-        button:disabled { background: #666; cursor: not-allowed; }
+        button:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.6);
+        }
+        button:disabled { 
+            background: #666; 
+            cursor: not-allowed; 
+            transform: none;
+            box-shadow: none;
+        }
         .result { 
-            background: #2a2a2a; 
-            padding: 15px; 
-            border-radius: 4px; 
-            margin: 15px 0; 
-            border-left: 4px solid #61dafb;
+            background: rgba(255,255,255,0.1); 
+            padding: 20px; 
+            border-radius: 8px; 
+            margin: 20px 0; 
+            border-left: 4px solid #4CAF50;
         }
-        .error { border-left-color: #f44336; background: #4a2a2a; }
-        .file-info { color: #ccc; font-size: 14px; margin: 10px 0; }
+        .error { 
+            border-left-color: #f44336; 
+            background: rgba(244, 67, 54, 0.1); 
+        }
+        .file-info { 
+            color: #e0e0e0; 
+            font-size: 14px; 
+            margin: 15px 0; 
+            padding: 10px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 5px;
+        }
+        .status { color: #4CAF50; font-weight: bold; }
+        .success { color: #4CAF50; }
+        code { 
+            background: rgba(0,0,0,0.3); 
+            padding: 2px 6px; 
+            border-radius: 3px; 
+            font-family: 'Courier New', monospace;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Document Notarization Service</h1>
+        <h1>🔗 VeChain Document Notarization</h1>
         
         <div class="upload-section">
-            <h2>Upload Document for VeChain Notarization</h2>
-            <p>Select a file to upload and notarize on the VeChain blockchain</p>
+            <h2>Upload Document for Blockchain Notarization</h2>
+            <p>Select a file to upload and permanently notarize on the VeChain blockchain</p>
             
             <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png">
             <div id="fileInfo" class="file-info"></div>
             
             <button id="uploadBtn" onclick="uploadFile()" disabled>
-                Upload & Notarize
+                📤 Upload & Notarize on VeChain
             </button>
             
             <div id="result"></div>
@@ -79,9 +137,10 @@
             const file = e.target.files[0];
             if (file) {
                 fileInfo.innerHTML = `
-                    <strong>Selected:</strong> ${file.name}<br>
-                    <strong>Size:</strong> ${(file.size / 1024).toFixed(2)} KB<br>
-                    <strong>Type:</strong> ${file.type || 'Unknown'}
+                    <div class="status">✅ File Ready:</div>
+                    <strong>📄 Name:</strong> ${file.name}<br>
+                    <strong>📏 Size:</strong> ${(file.size / 1024).toFixed(2)} KB<br>
+                    <strong>📋 Type:</strong> ${file.type || 'Unknown'}
                 `;
                 uploadBtn.disabled = false;
             } else {
@@ -98,45 +157,50 @@
             }
 
             uploadBtn.disabled = true;
-            uploadBtn.textContent = 'Uploading...';
-            result.innerHTML = '<div class="result">Processing file and creating VeChain transaction...</div>';
+            uploadBtn.textContent = '⏳ Processing...';
+            result.innerHTML = '<div class="result"><div class="status">⚡ Processing file and creating VeChain transaction...</div></div>';
 
             try {
                 const formData = new FormData();
                 formData.append('document', file);
-                formData.append('paymentIntentId', 'test-payment-skipped');
 
+                console.log('Calling API...');
                 const response = await fetch('/api/upload', {
                     method: 'POST',
                     body: formData
                 });
 
+                console.log('Response received:', response.status);
                 const data = await response.json();
+                console.log('Data:', data);
 
                 if (response.ok && data.success) {
                     result.innerHTML = `
                         <div class="result">
-                            <h3>✅ Upload Successful!</h3>
-                            <p><strong>File Hash:</strong> ${data.fileHash}</p>
-                            <p><strong>Transaction ID:</strong> ${data.transactionId}</p>
-                            <p><strong>File Name:</strong> ${data.fileName}</p>
-                            <p><strong>File Size:</strong> ${data.fileSize} bytes</p>
+                            <h3 class="success">🎉 SUCCESS! Document Notarized</h3>
+                            <p><strong>🔗 File Hash:</strong> <code>${data.fileHash}</code></p>
+                            <p><strong>⛓️ Transaction ID:</strong> <code>${data.transactionId}</code></p>
+                            <p><strong>📄 File Name:</strong> ${data.fileName}</p>
+                            <p><strong>📊 File Size:</strong> ${data.fileSize} bytes</p>
+                            <p style="margin-top: 20px;" class="success"><strong>🎉 Your document is now permanently recorded on the VeChain blockchain!</strong></p>
                         </div>
                     `;
                 } else {
                     throw new Error(data.error || 'Upload failed');
                 }
             } catch (error) {
+                console.error('Upload error:', error);
                 result.innerHTML = `
                     <div class="result error">
                         <h3>❌ Upload Failed</h3>
                         <p><strong>Error:</strong> ${error.message}</p>
+                        <p><em>Check browser console for details</em></p>
                     </div>
                 `;
             }
 
             uploadBtn.disabled = false;
-            uploadBtn.textContent = 'Upload & Notarize';
+            uploadBtn.textContent = '📤 Upload & Notarize on VeChain';
         }
     </script>
 </body>
