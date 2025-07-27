@@ -1,0 +1,10 @@
+{
+  "name": "vechain-notarization",
+  "version": "1.0.0",
+  "description": "VeChain Document Notarization with Prepaid Gas",
+  "dependencies": {
+    "@vechain/connex": "^2.0.0",
+    "@vechain/connex-framework": "^2.0.0",
+    "@vechain/connex.driver-nodejs": "^2.0.0"
+  }
+}

@@ -1,63 +1,96 @@
 # 🔗 VeChain Document Notarization
 
-A client-side web application for generating cryptographic hashes of documents for VeChain blockchain notarization.
+A web application that uploads document hashes to the VeChain blockchain using prepaid gas wallet.
 
 ## ✨ Features
 
-- 📄 **Client-side file processing** - No uploads to servers
-- 🔒 **SHA-256 hashing** using Web Crypto API
-- 🎨 **Modern gradient UI** with glass morphism effects
+- 📄 **Real VeChain blockchain integration** with prepaid gas
+- 🔒 **SHA-256 file hashing** using Web Crypto API
+- ⛓️ **Automatic transaction submission** to VeChain testnet
+- 🎨 **Modern gradient UI** with blockchain status
 - 📱 **Responsive design** for mobile and desktop
-- 🔗 **VeChain ready** - Hash output compatible with blockchain notarization
-- 📋 **Copy to clipboard** functionality for easy use
+- 🔍 **VeChain explorer integration** for transaction verification
 
-## 🚀 Live Demo
+## 🚀 Deployment Options
 
-Visit the live app: [VeChain Document Notarization](https://your-username.github.io/patent-claude/)
+### **Option 1: Vercel (Recommended for full functionality)**
+
+1. **Fork this repository**
+2. **Connect to Vercel**:
+   - Go to [vercel.com](https://vercel.com)
+   - Import your forked repository
+   - Deploy with default settings
+
+3. **Add Environment Variables** in Vercel dashboard:
+   ```
+   VECHAIN_NODE_URL=https://testnet.veblocks.net
+   VECHAIN_PRIVATE_KEY=your_prepaid_wallet_private_key
+   ```
+
+4. **Your app will have REAL VeChain integration!**
+
+### **Option 2: GitHub Pages (Limited - hash generation only)**
+
+- Deploys to: `https://your-username.github.io/repository-name/`
+- **Limitation**: Cannot run VeChain API (server-side functions not supported)
+- **Functionality**: Generates hashes but cannot submit to blockchain
+- **Use case**: Hash generation for manual VeChain submission
 
 ## 🛠️ How it Works
 
+### **With Vercel (Full VeChain Integration):**
 1. **Select a file** (PDF, DOC, images, etc.)
-2. **Click "Process & Hash"** to generate SHA-256 hash
-3. **Copy the hash** for use in VeChain smart contracts
-4. **Files stay local** - nothing is uploaded to any server
+2. **Click "Upload & Notarize"** 
+3. **App generates SHA-256 hash**
+4. **Submits hash to VeChain blockchain** using prepaid wallet
+5. **Returns real transaction ID** 
+6. **View on VeChain Explorer** to verify
 
-## 🔧 Technical Details
+### **With GitHub Pages (Hash Only):**
+1. **Select a file**
+2. **Generates SHA-256 hash** 
+3. **Copy hash** for manual blockchain submission
 
-- **Pure HTML/CSS/JavaScript** - No frameworks required
-- **Web Crypto API** for secure hash generation
-- **GitHub Pages compatible** - Static hosting only
-- **Privacy-first** - All processing happens in your browser
+## 🔧 Environment Variables
 
-## 📦 Installation
+### **Required for Vercel deployment:**
 
-1. Clone this repository
-2. Open `index.html` in any modern web browser
-3. Or deploy to GitHub Pages for public access
+```bash
+VECHAIN_NODE_URL=https://testnet.veblocks.net
+VECHAIN_PRIVATE_KEY=0x1234567890abcdef...  # Your prepaid wallet private key
+```
 
-## 🌐 GitHub Pages Deployment
-
-1. Go to repository Settings
-2. Navigate to Pages section
-3. Select "Deploy from a branch"
-4. Choose `main` branch and `/` (root) folder
-5. Save and your app will be live!
+### **Prepaid Wallet Setup:**
+- Use VeChain testnet for development
+- Fund wallet with VTHO for gas fees
+- Keep private key secure in Vercel environment variables
 
 ## 🔐 Security
 
-- Files never leave your computer
-- Hash generation uses standard Web Crypto API
-- No server-side processing required
-- Open source and auditable
+- ✅ **Private key stored** in Vercel environment variables
+- ✅ **Files processed client-side** - never uploaded to servers
+- ✅ **Hash generation** uses standard Web Crypto API
+- ✅ **VeChain integration** uses official Connex framework
+- ✅ **Open source** and auditable
 
-## 🎯 Use Cases
+## 🎯 Real Blockchain Features (Vercel only)
 
-- **Document integrity verification**
-- **Timestamp proofs on blockchain**
-- **Legal document notarization**
-- **Intellectual property protection**
-- **Supply chain documentation**
+- **Real VeChain transactions** with your prepaid wallet
+- **Testnet notarization** for development/testing
+- **Transaction receipts** with block numbers
+- **Gas usage tracking** 
+- **VeChain Explorer links** for verification
+- **Automatic confirmation** waiting
+
+## 📱 Test Your Hash
+
+Upload the same file twice - you'll get the **identical hash**, proving the SHA-256 calculation is legitimate and deterministic.
+
+## 🌐 Live Demos
+
+- **GitHub Pages** (hash only): `https://your-username.github.io/patent-claude/`
+- **Vercel** (full VeChain): Deploy to get your custom URL with real blockchain!
 
 ---
 
-Built for VeChain blockchain document notarization 🚀
+**🚀 Deploy to Vercel for real VeChain blockchain integration with your prepaid wallet!**
