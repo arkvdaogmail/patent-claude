@@ -1,0 +1,26 @@
+{
+  "name": "vechain-document-notarization",
+  "version": "1.0.0",
+  "description": "A web application that uploads document hashes to the VeChain blockchain using prepaid gas wallet",
+  "main": "index.html",
+  "scripts": {
+    "start": "serve .",
+    "build": "echo 'Static site - no build required'",
+    "dev": "serve . -l 3000"
+  },
+  "keywords": [
+    "vechain",
+    "blockchain",
+    "document-notarization",
+    "hash",
+    "web3"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "serve": "^14.0.0"
+  },
+  "engines": {
+    "node": ">=16"
+  }
+}
