@@ -100,3 +100,4 @@ npm run build
 
 For technical support or questions about deployment, contact the development team.
 
+force redeploy
