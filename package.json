@@ -5,6 +5,7 @@
   "dependencies": {
     "@vechain/connex": "^2.0.0",
     "@vechain/connex-framework": "^2.0.0",
-    "@vechain/connex.driver-nodejs": "^2.0.0"
+    "@vechain/connex.driver-nodejs": "^2.0.0",
+    "@vechain/sdk-core": "^2.0.0"
   }
 }
