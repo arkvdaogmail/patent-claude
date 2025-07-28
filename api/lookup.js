@@ -60,10 +60,10 @@ export default async function handler(req, res) {
 
     } catch (error) {
         // This is the new, improved error handling.
+        // It will send the exact error message to the frontend.
         console.error("Lookup API Runtime Error:", error);
         const errorMessage = error.message || 'An unknown error occurred.';
         const errorStack = error.stack || 'No stack trace available.';
         return buildErrorResponse(res, 500, 'API execution failed.', { message: errorMessage, stack: errorStack });
     }
 }
-
