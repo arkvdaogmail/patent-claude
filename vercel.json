@@ -1,27 +1,10 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "api/**/*.js",
-      "use": "@vercel/node"
-    }
-  ],
   "routes": [
-    {
-      "src": "/lookup",
-      "dest": "/lookup.html"
-    },
-    {
-      "src": "/api/lookup",
-      "dest": "/api/lookup.js"
-    },
-    {
-      "src": "/api/notarize",
-      "dest": "/api/notarize.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
-    }
+    { "src": "/api/lookup", "dest": "/api/lookup.js" },
+    { "src": "/api/notarize", "dest": "/api/notarize.js" },
+    { "src": "/lookup", "dest": "/lookup.html" },
+    { "src": "/index.html", "dest": "/index.html" },
+    { "src": "/", "dest": "/index.html" }
   ]
 }
