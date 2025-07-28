@@ -1,10 +1,8 @@
 {
   "version": 2,
+  "public": true,
   "routes": [
-    { "src": "/api/lookup", "dest": "/api/lookup.js" },
-    { "src": "/api/notarize", "dest": "/api/notarize.js" },
-    { "src": "/lookup", "dest": "/lookup.html" },
-    { "src": "/index.html", "dest": "/index.html" },
-    { "src": "/", "dest": "/index.html" }
+    { "src": "/api/(.*)", "dest": "/api/$1" }
   ]
 }
+
