@@ -4,8 +4,9 @@
     <title>VeChain Document Notarization</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://unpkg.com/@vechain/connex@2/dist/connex.min.js"></script>
+    <!-- Removed Connex script as it's not used for this backend approach -->
     <style>
+        /* Your existing CSS styles are perfect, no changes needed here. */
         * { box-sizing: border-box; }
         body { 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
@@ -146,11 +147,8 @@
         </div>
         
         <div class="info-box">
-            <h3>⛓️ Real VeChain Blockchain Notarization:</h3>
-            <p>1. <strong>Upload document</strong> → Generate SHA-256 hash<br>
-            2. <strong>Submit to VeChain</strong> → Creates permanent blockchain record<br>
-            3. <strong>Public verification</strong> → Anyone can verify on VeChain explorer<br>
-            4. <strong>Prepaid wallet</strong> → Automatic gas payment</p>
+            <h3>✅ Fully Automated Notarization:</h3>
+            <p>This app now automatically submits your document's hash to the VeChain testnet. Your private keys are kept secure on the server and are never exposed to the browser.</p>
         </div>
         
         <div class="upload-section">
@@ -172,25 +170,20 @@
         const fileInput = document.getElementById('fileInput');
         const fileInfo = document.getElementById('fileInfo');
         const notarizeBtn = document.getElementById('notarizeBtn');
-        const result = document.getElementById('result');
-
-        // Your VeChain wallet configuration
-        const WALLET_CONFIG = {
-            mnemonic: 'volcano cliff mercy buddy poem illegal jazz umbrella simple arrow egg october',
-            address: '0xB0A2231fcBc705742E565F11c92E781f53F70Bb2',
-            nodeUrl: 'https://testnet.vechain.org'
-        };
+        const resultDiv = document.getElementById('result');
 
         fileInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {
                 fileInfo.innerHTML = `
                     <div class="status">✅ Document Ready for VeChain:</div>
-                    <strong>📄 Name:</strong> ${file.name}<br>
-                    <strong>📏 Size:</strong> ${(file.size / 1024).toFixed(2)} KB<br>
-                    <strong>📋 Type:</strong> ${file.type || 'Unknown'}
+                    <strong>📄 Name:</strong> ${file.name}  
+
+                    <strong>📏 Size:</strong> ${(file.size / 1024).toFixed(2)} KB  
+
                 `;
                 notarizeBtn.disabled = false;
+                resultDiv.innerHTML = ''; // Clear previous results
             } else {
                 fileInfo.innerHTML = '';
                 notarizeBtn.disabled = true;
@@ -217,124 +210,53 @@
             
             try {
                 // Step 1: Generate hash
-                result.innerHTML = '<div class="result"><div class="status">🔧 Generating document hash...</div></div>';
+                resultDiv.innerHTML = '<div class="result"><div class="status">🔧 Generating document hash...</div></div>';
                 const fileHash = await sha256(file);
-                console.log('Generated hash:', fileHash);
+                
+                resultDiv.innerHTML = `<div class="result">
+                    <p><strong>Generated Hash:</strong> <code>${fileHash}</code></p>
+                    <div class="status">⛓️ Submitting to VeChain via secure API...</div>
+                </div>`;
 
-                // Step 2: Connect to VeChain
-                result.innerHTML = '<div class="result"><div class="status">🌐 Connecting to VeChain testnet...</div></div>';
-                
-                // Create transaction data
-                const transactionData = {
-                    to: WALLET_CONFIG.address, // Send to yourself
-                    value: '0x0', // 0 VET
-                    data: fileHash, // Document hash as data
-                    gas: 100000
-                };
+                // Step 2: Call the secure backend API
+                const response = await fetch('/api/notarize', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ hash: fileHash })
+                });
 
-                // Step 3: Submit to VeChain using fetch (since we can't use Connex directly on static pages)
-                result.innerHTML = '<div class="result"><div class="status">⛓️ Submitting to VeChain blockchain...</div></div>';
-                
-                // For now, show the transaction that would be created
-                const timestamp = new Date().toISOString();
-                const mockTxId = 'pending_submission_' + Date.now();
-                
-                result.innerHTML = `
-                    <div class="result">
-                        <h3 class="success">✅ Document Hash Generated!</h3>
-                        <p><strong>📄 File Name:</strong> ${file.name}</p>
-                        <p><strong>📊 File Size:</strong> ${file.size} bytes</p>
-                        <p><strong>🔗 Document Hash:</strong><br><code>${fileHash}</code></p>
-                        <p><strong>📅 Generated:</strong> ${timestamp}</p>
-                        
-                        <div class="blockchain-result">
-                            <h4>⛓️ VeChain Transaction Ready:</h4>
-                            <p><strong>From:</strong> ${WALLET_CONFIG.address}<br>
-                            <strong>To:</strong> ${WALLET_CONFIG.address}<br>
-                            <strong>Value:</strong> 0 VET<br>
-                            <strong>Data:</strong> ${fileHash}<br>
-                            <strong>Network:</strong> VeChain Testnet</p>
-                            
-                            <p><strong>⚠️ Manual Submission Required:</strong><br>
-                            Due to GitHub Pages limitations, you need to submit this transaction manually using VeChain Sync or a custom script with your mnemonic.</p>
-                            
-                            <button onclick="copyTransactionData('${fileHash}', '${file.name}')" style="background: #2196F3; margin-top: 10px;">
-                                📋 Copy Transaction Data
-                            </button>
-                            
-                            <button onclick="copyHash('${fileHash}')" style="background: #FF9800; margin-top: 10px;">
-                                📋 Copy Hash Only
-                            </button>
-                            
-                            <button onclick="openExplorer()" style="background: #9C27B0; margin-top: 10px;">
-                                🔍 Open VeChain Explorer
-                            </button>
-                            
-                            <button onclick="lookupHash('${fileHash}')" style="background: #795548; margin-top: 10px;">
-                                🔍 Lookup This Hash
-                            </button>
-                        </div>
-                        
-                        <div class="info-box">
-                            <h4>🚀 Next Steps for Real Blockchain Submission:</h4>
-                            <p>1. <strong>Copy transaction data</strong> above<br>
-                            2. <strong>Use VeChain Sync</strong> or custom script<br>
-                            3. <strong>Submit transaction</strong> with your mnemonic<br>
-                            4. <strong>Get real transaction ID</strong><br>
-                            5. <strong>Verify on explorer</strong> → Your hash will appear!<br>
-                            6. <strong>Use lookup page</strong> to verify transactions</p>
-                        </div>
+                const result = await response.json();
+
+                if (!response.ok || !result.success) {
+                    throw new Error(result.error?.message || 'API request failed');
+                }
+
+                // Step 3: Display success result from the API
+                const txId = result.data.transactionId;
+                const explorerUrl = `https://explore-testnet.vechain.org/transactions/${txId}`;
+
+                resultDiv.innerHTML = `
+                    <div class="blockchain-result">
+                        <h3 class="success">✅ Notarization Successful!</h3>
+                        <p>Your document hash has been permanently recorded on the VeChain testnet.</p>
+                        <p><strong>Transaction ID:</strong>  
+<code>${txId}</code></p>
+                        <a href="${explorerUrl}" target="_blank" style="color: #61dafb; font-weight: bold;">View Transaction on VeChain Explorer</a>
                     </div>
                 `;
 
-            } catch (error) {
+            } catch (error ) {
                 console.error('Notarization error:', error);
-                result.innerHTML = `
+                resultDiv.innerHTML = `
                     <div class="result error">
                         <h3>❌ Notarization Failed</h3>
                         <p><strong>Error:</strong> ${error.message}</p>
-                        <p><em>Check browser console for details</em></p>
                     </div>
                 `;
+            } finally {
+                notarizeBtn.disabled = false;
+                notarizeBtn.textContent = '⛓️ Notarize on VeChain Blockchain';
             }
-
-            notarizeBtn.disabled = false;
-            notarizeBtn.textContent = '⛓️ Notarize on VeChain Blockchain';
-        }
-
-        function copyHash(hash) {
-            navigator.clipboard.writeText(hash).then(function() {
-                alert('Hash copied! This is your document fingerprint for VeChain submission.');
-            }, function(err) {
-                alert('Could not copy hash: ' + err);
-            });
-        }
-
-        function copyTransactionData(hash, fileName) {
-            const txData = `VeChain Transaction Data:
-From: ${WALLET_CONFIG.address}
-To: ${WALLET_CONFIG.address}
-Value: 0 VET
-Data: ${hash}
-Gas: 100000
-Comment: Document notarization: ${fileName}
-
-Mnemonic: ${WALLET_CONFIG.mnemonic}
-Network: VeChain Testnet (https://testnet.vechain.org)`;
-
-            navigator.clipboard.writeText(txData).then(function() {
-                alert('Complete transaction data copied! Use this with VeChain Sync or custom script.');
-            }, function(err) {
-                alert('Could not copy transaction data: ' + err);
-            });
-        }
-
-        function openExplorer() {
-            window.open('https://explore-testnet.vechain.org/', '_blank');
-        }
-
-        function lookupHash(hash) {
-            window.location.href = `lookup.html?search=${encodeURIComponent(hash)}`;
         }
     </script>
 </body>
