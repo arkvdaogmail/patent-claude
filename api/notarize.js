@@ -1,11 +1,21 @@
-import { ThorClient } from "@vechain/sdk-network";
+// api/notarize.js
+
+import { ThorClient, VechainProvider } from "@vechain/sdk-network";
 import { buildErrorResponse, buildSuccessResponse } from "../_utils/response-builder";
+import { TransactionHandler, secp256k1 } from "@vechain/sdk-core";
+
+// Load private key from environment variables
+const privateKey = process.env.VECHAIN_PRIVATE_KEY;
+if (!privateKey) {
+  throw new Error("VECHAIN_PRIVATE_KEY is not set in environment variables.");
+}
+const account = secp256k1.deriveKey(Buffer.from(privateKey, 'hex')).deriveAddress();
 
 // Initialize ThorClient to connect to the VeChain testnet
-const thorClient = new ThorClient("https://testnet.vechain.org/" );
+const thorClient = new ThorClient(process.env.VECHAIN_NODE_URL || "https://testnet.vechain.org/" );
+const provider = new VechainProvider(thorClient, undefined, false); // Fee delegation disabled
 
 export default async function handler(req, res) {
-  // Ensure the request is a POST request
   if (req.method !== 'POST') {
     return buildErrorResponse(res, 405, 'Method Not Allowed');
   }
@@ -13,27 +23,52 @@ export default async function handler(req, res) {
   try {
     const { hash } = req.body;
 
-    // Basic validation
     if (!hash || typeof hash !== 'string' || !hash.startsWith('0x')) {
       return buildErrorResponse(res, 400, 'Invalid or missing hash parameter.');
     }
 
-    // For now, we just check the connection by getting the genesis block
-    const genesisBlock = await thorClient.blocks.get(0);
+    // 1. Build the transaction clauses
+    const clauses = [{
+      to: account, // Send to self
+      value: 0,
+      data: hash,
+    }];
 
-    if (!genesisBlock) {
-      throw new Error('Failed to connect to VeChain testnet.');
-    }
+    // 2. Estimate gas and get block info
+    const gasResult = await thorClient.gas.estimateGas(clauses, account);
+    const blockRef = thorClient.blocks.getBestBlockRef();
+    const chainTag = thorClient.thor.getChainTag();
+    
+    const body = {
+        clauses,
+        gas: gasResult.totalGas,
+        blockRef: await blockRef,
+        chainTag: await chainTag,
+        gasPriceCoef: 128,
+        expiration: 32,
+        dependsOn: null,
+        nonce: Date.now(),
+    };
 
-    // Respond with a success message (actual transaction will be added later)
+    // 3. Sign and send the transaction
+    const rawTransaction = TransactionHandler.encode(body, false);
+    const signature = secp256k1.sign(TransactionHandler.signingHash(body), Buffer.from(privateKey, 'hex'));
+    const signedTx = {
+        raw: rawTransaction,
+        signature: signature,
+        origin: account
+    };
+
+    const sentTx = await provider.sendTransaction(signedTx);
+
+    // 4. Respond with the transaction ID
     return buildSuccessResponse(res, {
-      message: "Successfully connected to VeChain and received hash.",
-      receivedHash: hash,
-      genesisBlockId: genesisBlock.id
+      message: "Transaction sent successfully!",
+      transactionId: sentTx.id
     });
 
   } catch (error) {
-    console.error(error);
+    console.error("Vechain SDK Error:", error);
     return buildErrorResponse(res, 500, 'Internal Server Error', error.message);
   }
 }
