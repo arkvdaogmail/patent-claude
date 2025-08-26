@@ -3,418 +3,532 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document Notarization</title>
-    <script src="https://js.stripe.com/v3/"></script>
+    <title>StampID - Create Permanent Proof</title>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://js.stripe.com/v3/"></script>
+
     <style>
         body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f7f9;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
             padding: 20px;
         }
-        .status {
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 5px;
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            position: relative;
         }
-        .status.info { background: #e3f2fd; color: #1976d2; }
-        .status.success { background: #e8f5e9; color: #388e3c; }
-        .status.error { background: #ffebee; color: #c62828; }
-        .status.warning { background: #fff3e0; color: #f57c00; }
+
+        h1, h2 {
+            text-align: center;
+            color: #1a202c;
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            margin-top: 30px;
+            font-size: 1.2em;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+        
+        /* Sections */
+        section {
+            display: none; /* JS will manage visibility */
+            margin-top: 20px;
+        }
+
+        /* Status Bar */
+        .status {
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-weight: 500;
+            text-align: center;
+        }
+        .status.info { background-color: #e0f2fe; color: #0c54a8; }
+        .status.success { background-color: #dcfce7; color: #166534; }
+        .status.error { background-color: #fee2e2; color: #991b1b; }
+
+        /* Form Elements */
+        input[type="email"], input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px 15px;
+            border-radius: 6px;
+            border: none;
+            color: white;
+            background-color: #2563eb;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #1d4ed8;
+        }
+        
+        button:disabled {
+            background-color: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        #signup-btn {
+             background-color: #6b7280;
+        }
+        #signup-btn:hover {
+             background-color: #4b5563;
+        }
+
+        #signout-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: auto;
+            padding: 8px 12px;
+            font-size: 12px;
+            background-color: #ef4444;
+        }
+
+        /* Drop Zone */
         #drop-zone {
             border: 2px dashed #ccc;
+            border-radius: 8px;
             padding: 40px;
             text-align: center;
             cursor: pointer;
-            margin: 20px 0;
+            color: #666;
+            transition: background-color 0.2s, border-color 0.2s;
         }
         #drop-zone.dragover {
-            background: #f0f0f0;
-            border-color: #666;
+            background-color: #e0f2fe;
+            border-color: #2563eb;
         }
-        input, button {
-            padding: 10px;
-            margin: 5px;
-            font-size: 16px;
+        #fileInput {
+            display: none;
         }
-        button {
-            background: #1976d2;
-            color: white;
-            border: none;
-            cursor: pointer;
-            border-radius: 5px;
-        }
-        button:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-        }
-        #payment-element {
-            border: 1px solid #ccc;
+        #file-info, #hash-info {
+            background: #f8fafc;
             padding: 15px;
-            margin: 20px 0;
-            border-radius: 5px;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+            margin-top: 15px;
+            word-wrap: break-word;
         }
-        section {
-            margin: 20px 0;
-            padding: 20px;
-            border: 1px solid #e0e0e0;
-            border-radius: 5px;
+        
+        /* Payment Element */
+        #payment-element {
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
         }
-        code {
-            background: #f5f5f5;
-            padding: 2px 5px;
-            font-size: 12px;
+        
+        /* Results */
+        #results-info a {
+            color: #2563eb;
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
-    <h1>Document Notarization Service</h1>
-    
-    <div id="status" class="status info">Status: Initializing...</div>
-    
-    <section id="auth-section">
-        <h2>Authentication</h2>
-        <input type="email" id="email" placeholder="Email">
-        <input type="password" id="password" placeholder="Password">
-        <button onclick="loginUser()">Login / Sign Up</button>
-    </section>
-    
-    <section id="upload-section" style="display:none;">
-        <h2>Upload Document</h2>
-        <div id="drop-zone">
-            Drop file here or click to select
-        </div>
-        <input type="file" id="fileInput" style="display:none;">
-        <div id="file-info"></div>
-        <div id="hash-info" style="display:none;"></div>
-    </section>
-    
-    <section id="payment-section" style="display:none;">
-        <h2>Payment</h2>
-        <p>Notarization fee: $5.00</p>
-        <div id="payment-element"></div>
-        <button id="notarize-btn">Pay & Notarize</button>
-    </section>
-    
-    <section id="results-section" style="display:none;">
-        <h2>Notarization Results</h2>
-        <div id="results-info"></div>
-    </section>
+
+    <div class="container">
+        <h1>StampID</h1>
+        <div id="status" class="status info">Initializing...</div>
+
+        <button id="signout-btn" style="display: none;">Sign Out</button>
+
+        <section id="auth-section">
+            <h2>Login or Sign Up</h2>
+            <input type="email" id="email" placeholder="Enter your email" required>
+            <input type="password" id="password" placeholder="Enter your password" required>
+            <button id="login-btn">Login</button>
+            <button id="signup-btn">Sign Up</button>
+        </section>
+
+        <section id="upload-section">
+            <h2>1. Upload Your File</h2>
+            <div id="drop-zone">
+                <strong>Drag & Drop a file here</strong><br> or click to select a file
+            </div>
+            <input type="file" id="fileInput">
+            <div id="file-info"></div>
+            <div id="hash-info" style="display: none;"></div>
+            <button id="reset-file-btn" style="display: none;">Choose a different file</button>
+        </section>
+
+        <section id="payment-section">
+            <h2>2. Pay to Create Proof ($1.99)</h2>
+            <div id="payment-element">
+                </div>
+            <button id="notarize-btn">Pay & Create Proof</button>
+        </section>
+
+        <section id="results-section">
+            <h2>3. Your Proof is Ready</h2>
+            <div id="results-info">
+                </div>
+        </section>
+
+    </div>
 
     <script>
-    // === CONFIGURATION ===
-    const CONFIG = {
-        BACKEND_URL: "http://localhost:3000",
-        SUPABASE_URL: "https://mfrefbmnxygeahaluhzr.supabase.co",
-        SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1mcmVmYm1ueHlnZWFoYWx1aHpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI1NDIxOTUsImV4cCI6MjA2ODExODE5NX0.Ur3hl7rVEWk6U-ydNbKymFmXtxUlx6RTn0pU0EnP7u0",
-        STRIPE_KEY: "",
-        DEBUG_MODE: true
-    };
+        // =================================================================================
+        // 1. CONFIGURATION & INITIALIZATION
+        // =================================================================================
+        const BACKEND_URL = "http://localhost:3000";
+        const SUPABASE_URL = "https://mfrefbmnxygeahaluhzr.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1mcmVmYm1ueHlnZWFoYWx1aHpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI1NDIxOTUsImV4cCI6MjA2ODExODE5NX0.Ur3hl7rVEWk6U-ydNbKymFmXtxUlx6RTn0pU0EnP7u0";
 
-    // === STATE MANAGEMENT ===
-    const state = {
-        stripe: null,
-        elements: null,
-        cardElement: null,
+        const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        let stripe, cardElement;
+
+        // =================================================================================
+        // 2. DOM ELEMENT REFERENCES
+        // =================================================================================
+        const statusElement = document.getElementById('status');
+        const authSection = document.getElementById('auth-section');
+        const uploadSection = document.getElementById('upload-section');
+        const paymentSection = document.getElementById('payment-section');
+        const resultsSection = document.getElementById('results-section');
+
+        const fileInput = document.getElementById('fileInput');
+        const dropZone = document.getElementById('drop-zone');
+        const fileInfoDiv = document.getElementById('file-info');
+        const hashInfoDiv = document.getElementById('hash-info');
+        const paymentElementContainer = document.getElementById('payment-element');
+        const resultsInfoDiv = document.getElementById('results-info');
+
+        const notarizeBtn = document.getElementById('notarize-btn');
+        const loginBtn = document.getElementById('login-btn');
+        const signupBtn = document.getElementById('signup-btn');
+        const signoutBtn = document.getElementById('signout-btn');
+        const resetFileBtn = document.getElementById('reset-file-btn');
+
+        // =================================================================================
+        // 3. APPLICATION STATE
+        // =================================================================================
+        let appState = {
+        user: null,
         uploadedFile: null,
         fileHash: null,
-        currentUser: null
-    };
+        isBusy: false,
+        };
 
-    // === DOM ELEMENTS ===
-    const dom = {
-        status: document.getElementById('status'),
-        authSection: document.getElementById('auth-section'),
-        uploadSection: document.getElementById('upload-section'),
-        paymentSection: document.getElementById('payment-section'),
-        paymentElement: document.getElementById('payment-element'),
-        notarizeBtn: document.getElementById('notarize-btn'),
-        fileInput: document.getElementById('fileInput'),
-        dropZone: document.getElementById('drop-zone'),
-        fileInfo: document.getElementById('file-info'),
-        hashInfo: document.getElementById('hash-info'),
-        resultsSection: document.getElementById('results-section'),
-        resultsInfo: document.getElementById('results-info')
-    };
+        // =================================================================================
+        // 4. UI MANAGEMENT
+        // =================================================================================
 
-    // === SUPABASE CLIENT ===
-    const sb = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+        /** Displays a status message to the user. */
+        function setStatus(message, type = 'info') {
+        statusElement.textContent = message;
+        statusElement.className = `status ${type}`;
+        }
 
-    // === UTILITY FUNCTIONS ===
-    function log(...args) {
-        if (CONFIG.DEBUG_MODE) console.log('[DEBUG]', ...args);
-    }
+        /** Toggles a button's disabled state and text content. */
+        function setButtonBusy(button, busy, text = 'Processing...') {
+        if (!button) return;
+        button.disabled = busy;
+        if (busy) {
+            button.dataset.originalText = button.textContent;
+            button.textContent = text;
+        } else {
+            button.textContent = button.dataset.originalText || '';
+        }
+        }
 
-    function setStatus(message, type = 'info') {
-        dom.status.textContent = `Status: ${message}`;
-        dom.status.className = `status ${type}`;
-        log(`Status [${type}]:`, message);
-    }
-
-    async function delay(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
-
-    // === AUTH FUNCTIONS ===
-    async function checkAuth() {
-        try {
-            const { data: { user }, error } = await sb.auth.getUser();
-            if (error) throw error;
+        /** Updates the visibility of UI sections based on the application state. */
+        function updateUIState() {
+            const { user, uploadedFile, fileHash } = appState;
             
-            state.currentUser = user;
+            authSection.style.display = user ? 'none' : 'block';
+            signoutBtn.style.display = user ? 'block' : 'none';
+            uploadSection.style.display = user ? 'block' : 'none';
+
+            paymentSection.style.display = user && fileHash ? 'block' : 'none';
             
-            if (user) {
-                setStatus(`Authenticated as ${user.email}`, 'success');
-                dom.authSection.style.display = 'none';
-                dom.uploadSection.style.display = 'block';
-                return true;
+            // Always hide results until a notarization is complete
+            if (resultsSection.style.display !== 'block') {
+                 resultsSection.style.display = 'none';
+            }
+
+            if (uploadedFile) {
+                fileInfoDiv.innerHTML = `<strong>File:</strong> ${uploadedFile.name} | <strong>Size:</strong> ${(uploadedFile.size / 1024 / 1024).toFixed(2)} MB`;
+                hashInfoDiv.style.display = fileHash ? 'block' : 'none';
+                if(fileHash) hashInfoDiv.textContent = `SHA-256 Hash: ${fileHash}`;
+                dropZone.style.display = 'none';
+                resetFileBtn.style.display = 'block';
             } else {
-                setStatus('Please log in to continue', 'info');
-                return false;
+                fileInfoDiv.innerHTML = '';
+                hashInfoDiv.style.display = 'none';
+                dropZone.style.display = 'block';
+                resetFileBtn.style.display = 'none';
             }
-        } catch (err) {
-            log('Auth check error:', err);
-            setStatus('Authentication check failed', 'error');
-            return false;
         }
-    }
 
-    async function loginUser() {
-        const email = document.getElementById('email').value?.trim();
-        const password = document.getElementById('password').value;
-        
-        if (!email || !password) {
-            setStatus('Please enter email and password', 'warning');
-            return;
-        }
-        
-        setStatus('Authenticating...', 'info');
-        
-        try {
-            let { data, error } = await sb.auth.signInWithPassword({ email, password });
-            
-            if (error) {
-                log('Login failed, attempting signup:', error);
-                const { data: signUpData, error: signUpError } = await sb.auth.signUp({ email, password });
-                if (signUpError) throw signUpError;
-                data = signUpData;
-                setStatus('Account created successfully', 'success');
+        // =================================================================================
+        // 5. AUTHENTICATION
+        // =================================================================================
+
+        /** Checks for an active Supabase session and updates the UI. */
+        async function checkAuth() {
+            const { data: { session } } = await sb.auth.getSession();
+            appState.user = session ? session.user : null;
+            if (appState.user) {
+                setStatus(`Authenticated as ${appState.user.email}.`, 'success');
+            } else {
+                setStatus('Please log in or sign up to continue.', 'info');
             }
+            updateUIState();
+        }
+
+        /** Handles user sign-in. */
+        async function signInUser() {
+            if (appState.isBusy) return;
+            appState.isBusy = true;
+            setButtonBusy(loginBtn, true, 'Signing In...');
             
-            await delay(500);
-            await checkAuth();
-        } catch (err) {
-            log('Auth error:', err);
-            setStatus(`Authentication failed: ${err.message}`, 'error');
-        }
-    }
-
-    // === FILE HANDLING ===
-    async function handleFile(file) {
-        if (!file) {
-            setStatus('No file selected', 'warning');
-            return;
-        }
-        
-        const maxSize = 10 * 1024 * 1024;
-        if (file.size > maxSize) {
-            setStatus('File too large (max 10MB)', 'error');
-            return;
-        }
-        
-        state.uploadedFile = file;
-        dom.fileInfo.innerHTML = `
-            <strong>File:</strong> ${file.name}<br>
-            <strong>Size:</strong> ${(file.size/1024/1024).toFixed(2)} MB<br>
-            <strong>Type:</strong> ${file.type || 'unknown'}
-        `;
-        
-        setStatus('Generating cryptographic hash...', 'info');
-        dom.notarizeBtn.disabled = true;
-        
-        try {
-            state.fileHash = await getFileHash(file);
-            dom.hashInfo.style.display = 'block';
-            dom.hashInfo.innerHTML = `
-                <strong>SHA-256 Hash:</strong><br>
-                <code style="word-break: break-all;">${state.fileHash}</code>
-            `;
-            setStatus('Hash generated successfully', 'success');
-            dom.paymentSection.style.display = 'block';
-            dom.notarizeBtn.disabled = false;
-        } catch (err) {
-            log('Hash error:', err);
-            setStatus(`Failed to generate hash: ${err.message}`, 'error');
-        }
-    }
-
-    async function getFileHash(file) {
-        const buffer = await file.arrayBuffer();
-        const digest = await crypto.subtle.digest('SHA-256', buffer);
-        return Array.from(new Uint8Array(digest))
-            .map(b => b.toString(16).padStart(2, '0'))
-            .join('');
-    }
-
-    // === STRIPE FUNCTIONS ===
-    async function initStripe() {
-        if (state.stripe) return true;
-        
-        try {
-            let stripeKey = CONFIG.STRIPE_KEY;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
             
-            if (!stripeKey) {
-                setStatus('Fetching payment configuration...', 'info');
-                const res = await fetch(`${CONFIG.BACKEND_URL}/config`);
-                
-                if (!res.ok) {
-                    const errorText = await res.text().catch(() => 'No error details');
-                    throw new Error(`Config fetch failed (${res.status}): ${errorText}`);
-                }
-                
-                const config = await res.json();
-                stripeKey = config.stripePublicKey;
-                
-                if (!stripeKey) {
-                    throw new Error('No Stripe key in config response');
-                }
+            try {
+                const { error } = await sb.auth.signInWithPassword({ email, password });
+                if (error) throw error;
+                await checkAuth(); // Re-check auth state on success
+            } catch (err) {
+                handleApiError('Sign-in failed', err);
+            } finally {
+                appState.isBusy = false;
+                setButtonBusy(loginBtn, false);
             }
-            
-            state.stripe = Stripe(stripeKey);
-            state.elements = state.stripe.elements();
-            state.cardElement = state.elements.create('card', {
-                style: {
-                    base: {
-                        fontSize: '16px',
-                        color: '#32325d',
-                        '::placeholder': { color: '#aab7c4' }
-                    }
-                }
-            });
-            state.cardElement.mount(dom.paymentElement);
-            
-            log('Stripe initialized successfully');
-            return true;
-        } catch (err) {
-            log('Stripe init error:', err);
-            setStatus(`Payment system error: ${err.message}`, 'error');
-            return false;
         }
-    }
 
-    // === PAYMENT & NOTARIZATION ===
-    async function processPaymentAndNotarize() {
-        if (!state.uploadedFile || !state.fileHash) {
-            setStatus('Please upload a file first', 'warning');
-            return;
+        /** Handles new user sign-up. */
+        async function signUpUser() {
+            if (appState.isBusy) return;
+            appState.isBusy = true;
+            setButtonBusy(signupBtn, true, 'Signing Up...');
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const { error } = await sb.auth.signUp({ email, password });
+                if (error) throw error;
+                setStatus('Sign-up successful! Please check your email for verification.', 'success');
+            } catch (err) {
+                handleApiError('Sign-up failed', err);
+            } finally {
+                appState.isBusy = false;
+                setButtonBusy(signupBtn, false);
+            }
         }
-        
-        dom.notarizeBtn.disabled = true;
-        
-        try {
-            if (!await initStripe()) {
-                dom.notarizeBtn.disabled = false;
+
+        /** Handles user sign-out. */
+        async function signOutUser() {
+            await sb.auth.signOut();
+            appState.user = null;
+            resetFileSelection(); // Also clear file state
+            setStatus('You have been signed out.', 'info');
+            updateUIState();
+        }
+
+        // =================================================================================
+        // 6. FILE HANDLING
+        // =================================================================================
+
+        /** Resets the file input and application state. */
+        function resetFileSelection() {
+            appState.uploadedFile = null;
+            appState.fileHash = null;
+            fileInput.value = ''; // Clear the file input
+            resultsSection.style.display = 'none'; // Hide old results
+            updateUIState();
+        }
+
+        /** Processes the selected file and calculates its hash. */
+        async function handleFile(file) {
+            if (!file) return;
+            resetFileSelection();
+            appState.uploadedFile = file;
+            updateUIState();
+            
+            setStatus('Generating cryptographic hash...', 'info');
+            
+            try {
+                const buffer = await file.arrayBuffer();
+                const digest = await crypto.subtle.digest('SHA-256', buffer);
+                const hash = [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, '0')).join('');
+                
+                appState.fileHash = hash;
+                setStatus('Hash generated. Ready for payment.', 'success');
+                initializeStripe(); // Pre-load stripe now that we have a file
+            } catch (err) {
+                setStatus('Failed to generate file hash: ' + err.message, 'error');
+            }
+            updateUIState();
+        }
+
+        // =================================================================================
+        // 7. PAYMENT & NOTARIZATION
+        // =================================================================================
+
+        /** Initializes the Stripe.js library and mounts the card element. */
+        async function initializeStripe() {
+            if (stripe) return; // Already initialized
+            try {
+                const response = await apiFetch('/config');
+                const { stripePublicKey } = response;
+                if (!stripePublicKey) throw new Error('stripePublicKey missing');
+
+                stripe = Stripe(stripePublicKey);
+                const elements = stripe.elements();
+                cardElement = elements.create('card');
+                cardElement.mount(paymentElementContainer);
+            } catch (err) {
+                handleApiError('Could not initialize payment system', err);
+            }
+        }
+
+        /** Main function to process payment and trigger notarization. */
+        async function processNotarization() {
+            if (appState.isBusy || !appState.fileHash || !stripe || !cardElement) {
+                setStatus('Please select a file and wait for systems to be ready.', 'info');
                 return;
             }
             
-            setStatus('Creating payment...', 'info');
-            const paymentRes = await fetch(`${CONFIG.BACKEND_URL}/create-payment`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ document_hash: state.fileHash })
-            });
+            appState.isBusy = true;
+            setButtonBusy(notarizeBtn, true);
+            setStatus('Initiating payment...', 'info');
             
-            if (!paymentRes.ok) {
-                const errorText = await paymentRes.text().catch(() => 'No error details');
-                throw new Error(`Payment creation failed (${paymentRes.status}): ${errorText}`);
-            }
-            
-            const { clientSecret } = await paymentRes.json();
-            if (!clientSecret) throw new Error('No client secret received');
-            
-            setStatus('Processing payment...', 'info');
-            const { paymentIntent, error } = await state.stripe.confirmCardPayment(clientSecret, {
-                payment_method: { card: state.cardElement }
-            });
-            
-            if (error) {
-                throw new Error(`Payment failed: ${error.message}`);
-            }
-            
-            if (paymentIntent?.status !== 'succeeded') {
-                throw new Error('Payment did not complete successfully');
-            }
-            
-            setStatus('Payment successful! Notarizing document...', 'success');
-            await notarizeDocument();
-            
-        } catch (err) {
-            log('Payment/Notarization error:', err);
-            setStatus(err.message, 'error');
-            dom.notarizeBtn.disabled = false;
-        }
-    }
+            try {
+                const paymentData = await apiFetch('/create-payment', {
+                    method: 'POST',
+                    body: { document_hash: appState.fileHash }
+                });
+                if (!paymentData.clientSecret) throw new Error('clientSecret missing');
 
-    async function notarizeDocument() {
-        const formData = new FormData();
-        formData.append('document', state.uploadedFile);
-        formData.append('name', state.uploadedFile.name);
-        
-        if (state.currentUser?.email) {
-            formData.append('email', state.currentUser.email);
+                const { paymentIntent, error: stripeError } = await stripe.confirmCardPayment(
+                    paymentData.clientSecret, { payment_method: { card: cardElement } }
+                );
+                if (stripeError) throw new Error(stripeError.message);
+                if (paymentIntent.status !== 'succeeded') throw new Error('Payment was not successful.');
+
+                setStatus('Payment successful! Finalizing proof...', 'success');
+                await notarizeDocument();
+                
+            } catch (err) {
+                handleApiError('Notarization process failed', err);
+            } finally {
+                appState.isBusy = false;
+                setButtonBusy(notarizeBtn, false);
+            }
         }
-        
-        try {
-            const response = await fetch(`${CONFIG.BACKEND_URL}/notarize`, {
-                method: 'POST',
-                body: formData
-            });
+
+        /** Sends the file to the backend for final notarization. */
+        async function notarizeDocument() {
+            const formData = new FormData();
+            formData.append('document', appState.uploadedFile);
+            formData.append('name', appState.uploadedFile.name);
+            if (appState.user?.email) formData.append('email', appState.user.email);
             
-            if (!response.ok) {
-                const errorText = await response.text().catch(() => 'No error details');
-                throw new Error(`Notarization failed (${response.status}): ${errorText}`);
-            }
-            
-            const result = await response.json();
-            
-            if (!result.success) {
-                throw new Error(result.details || result.error || 'Notarization failed');
-            }
-            
-            dom.resultsSection.style.display = 'block';
-            dom.resultsInfo.innerHTML = `
+            const result = await apiFetch('/notarize', { method: 'POST', body: formData, isJson: false });
+            if (!result.success) throw new Error(result.details || 'Unknown notarization error');
+
+            paymentSection.style.display = 'none'; // Hide payment form on success
+            uploadSection.style.display = 'none'; // Hide upload form on success
+            resultsSection.style.display = 'block';
+            resultsInfoDiv.innerHTML = `
                 <div class="status success">
-                    <h3>✅ Notarization Complete!</h3>
-                    <div class="result-details">
-                        <p><strong>Transaction ID:</strong><br>
-                          <a href="${result.explorerUrl}" target="_blank" rel="noopener">
-                            ${result.vechainTx}
-                          </a>
-                        </p>
-                        <p><strong>Document Hash:</strong><br>
-                          <code>${result.documentHash}</code>
-                        </p>
-                        <p><strong>Timestamp:</strong> ${new Date().toISOString()}</p>
-                        <p><strong>Document:</strong><br>
-                          <a href="${result.documentUrl}" target="_blank" rel="noopener">
-                            View Stored File
-                          </a>
-                        </p>
-                    </div>
+                <p><strong>Proof Created Successfully!</strong></p>
+                <p><strong>VeChain Transaction:</strong> <a href="${result.explorerUrl}" target="_blank" rel="noopener noreferrer">${result.vechainTx}</a></p>
+                <p><strong>Document Hash:</strong> ${result.documentHash}</p>
+                <p><strong>Document URL:</strong> <a href="${result.documentUrl}" target="_blank" rel="noopener noreferrer">View Stored File</a></p>
                 </div>
             `;
-            
-            setStatus('Document successfully notarized on blockchain!', 'success');
-            dom.notarizeBtn.disabled = false;
-            
-        } catch (err) {
-            log('Notarization error:', err);
-            throw err;
+            setStatus('Process complete!', 'success');
         }
-    }
 
-    // === EVENT LISTENERS ===
-    dom.
+        // =================================================================================
+        // 8. UTILITIES & EVENT LISTENERS
+        // =================================================================================
 
-        
+        /** A generic wrapper for fetch calls to the backend. */
+        async function apiFetch(endpoint, options = {}) {
+            const { method = 'GET', body = null, isJson = true } = options;
+            const headers = {};
+            let reqBody = body;
+
+            if (isJson && body) {
+                headers['Content-Type'] = 'application/json';
+                reqBody = JSON.stringify(body);
+            }
+
+            const response = await fetch(`${BACKEND_URL}${endpoint}`, { method, headers, body: reqBody });
+
+            if (!response.ok) {
+                const errorText = await response.text().catch(() => '(Could not read error body)');
+                throw new Error(`Request failed: ${response.status} ${response.statusText}. Details: ${errorText}`);
+            }
+            return response.json();
+        }
+
+        /** A generic error handler to log details and show a user-friendly message. */
+        function handleApiError(userMessage, error) {
+            console.error(`${userMessage}:`, error);
+            setStatus(`${userMessage}. Please try again.`, 'error');
+        }
+
+        // --- Event Listeners ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loginBtn?.addEventListener('click', signInUser);
+            signupBtn?.addEventListener('click', signUpUser);
+            signoutBtn?.addEventListener('click', signOutUser);
+
+            dropZone?.addEventListener('click', () => fileInput.click());
+            fileInput?.addEventListener('change', (e) => handleFile(e.target.files[0]));
+            resetFileBtn?.addEventListener('click', resetFileSelection);
+
+            dropZone?.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+            dropZone?.addEventListener('dragleave', (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); });
+            dropZone?.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('dragover');
+                if (e.dataTransfer.files.length) {
+                    handleFile(e.dataTransfer.files[0]);
+                }
+            });
+
+            notarizeBtn?.addEventListener('click', processNotarization);
+            
+            checkAuth(); // Initial check
+        });
+
+    </script>
+</body>
+</html>
