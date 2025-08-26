@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StampID - Integrated Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://js.stripe.com/v3/"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" referrerpolicy="no-referrer" />
+    <style>
+        body { font-family: sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; background-color: #f4f7f9; }
+        .container { background-color: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .section { margin-bottom: 25px; padding: 15px; border-radius: 6px; border: 1px solid #e0e0e0; }
+        h2 { border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-top: 0; color: #333; }
+        input[type="email"], input[type="password"], input[type="file"] { display: block; width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; }
+        .btn { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; color: white; margin-top: 10px; }
+        .btn-primary { background-color: #007bff; }
+        .btn-success { background-color: #28a745; }
+        .btn-disabled { background-color: #6c757d; cursor: not-allowed; }
+        .status { margin-top: 15px; padding: 12px; border-radius: 4px; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        .drop-zone { border: 2px dashed #007bff; padding: 25px; text-align: center; border-radius: 8px; margin-top: 10px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>StampID: Proof of Anything</h1>
+        <div id="status" class="status info">Status: Initializing...</div>
+
+        <div id="auth-section" class="section">
+            <h2>1. Log In</h2>
+            <p>Log in with your Supabase account.</p>
+            <input type="email" id="email" placeholder="Email" required />
+            <input type="password" id="password" placeholder="Password" required />
+            <button class="btn btn-primary" onclick="loginUser()">Log In / Sign Up</button>
+        </div>
+
+        <div id="upload-section" class="section" style="display: none;">
+            <h2>2. Upload & Hash</h2>
+            <p>Drag and drop a file or click to select.</p>
+            <div id="drop-zone" class="drop-zone">
+                <i class="fas fa-cloud-upload-alt" style="font-size: 24px; color: #007bff;"></i>
+                <p>Drag a file here or browse</p>
+                <input type="file" id="fileInput" hidden />
+            </div>
+            <div id="file-info" style="margin-top: 15px;"></div>
+            <div id="hash-info" class="status info" style="display: none;"></div>
+        </div>
+
+        <div id="payment-section" class="section" style="display: none;">
+            <h2>3. Secure Notarization</h2>
+            <p>Finalize your proof with a secure payment.</p>
+            <div id="payment-element"></div>
+            <button id="notarize-btn" class="btn btn-success" disabled>Pay $4.99 & Notarize</button>
+        </div>
+
+        <div id="results-section" class="section" style="display: none;">
+            <h2>4. Your Notarized Proof</h2>
+            <div id="results-info" class="status info"></div>
+        </div>
+    </div>
+
+<script>
+    // Configuration - Match your back-end endpoints
+    const BACKEND_URL = "http://localhost:3000"; // Based on your app.js
+    const SUPABASE_URL = "https://mfrefbmnxygeahaluhzr.supabase.co"; // From your configuration
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1mcmVmYm1ueHlnZWFoYWx1aHpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI1NDIxOTUsImV4cCI6MjA2ODExODE5NX0.Ur3hl7rVEWk6U-ydNbKymFmXtxUlx6RTn0pU0EnP7u0";
+    
+    // Initialize services
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    let stripe, elements;
+
+    // DOM Elements
+    const statusElement = document.getElementById('status');
+    const authSection = document.getElementById('auth-section');
+    const uploadSection = document.getElementById('upload-section');
+    const paymentSection = document.getElementById('payment-section');
+    const resultsSection = document.getElementById('results-section');
+    const fileInput = document.getElementById('fileInput');
+    const dropZone = document.getElementById('drop-zone');
+    const fileInfoDiv = document.getElementById('file-info');
+    const hashInfoDiv = document.getElementById('hash-info');
+    const notarizeBtn = document.getElementById('notarize-btn');
+    const resultsInfoDiv = document.getElementById('results-info');
+
+    let uploadedFile = null;
+    let fileHash = null;
+
+    // --- Authentication ---
+    async function checkAuth() {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+            setStatus('Authenticated. You can upload files now.', 'success');
+            authSection.style.display = 'none';
+            uploadSection.style.display = 'block';
+        } else {
+            setStatus('Please log in to continue.', 'info');
+        }
+    }
+    
+    async function loginUser() {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        
+        try {
+            let { data, error } = await supabase.auth.signInWithPassword({ email, password });
+            if (error) {
+                // Try signing up if login fails
+                const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ email, password });
+                if (signUpError) throw signUpError;
+                data = signUpData;
+            }
+            setStatus(`Logged in as ${data.user.email}.`, 'success');
+            checkAuth();
+        } catch (error) {
+            setStatus('Authentication failed: ' + error.message, 'error');
+        }
+    }
+    
+    // --- File Handling & Hashing ---
+    dropZone.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+
+    function handleFile(file) {
+        if (!file) return;
+        uploadedFile = file;
+        
+        fileInfoDiv.innerHTML = `<strong>File:</strong> ${file.name} | <strong>Size:</strong> ${(file.size / 1024 / 1024).toFixed(2)} MB`;
+        
+        setStatus('Generating cryptographic hash...', 'info');
+        notarizeBtn.disabled = true;
+        
+        getFileHash(uploadedFile).then(hash => {
+            fileHash = hash;
+            hashInfoDiv.style.display = 'block';
+            hashInfoDiv.textContent = `SHA-256 Hash: ${hash}`;
+            setStatus('Hash generated successfully.', 'success');
+            
+            // Show the next step
+            paymentSection.style.display = 'block';
+            notarizeBtn.disabled = false;
+        }).catch(error => {
+            setStatus('Failed to generate hash: ' + error.message, 'error');
+        });
+    }
+
+    async function getFileHash(file) {
+        const buffer = await file.arrayBuffer();
+        const digest = await crypto.subtle.digest('SHA-256', buffer);
+        const hex = [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, '0')).join('');
+        return hex;
+    }
+
+    // --- Stripe Payment ---
+    notarizeBtn.addEventListener('click', async () => {
+        if (!uploadedFile || !fileHash) {
+            setStatus('Please upload and hash a file first.', 'warning');
+            return;
+        }
+        
+        setStatus('Initiating payment...', 'info');
+        notarizeBtn.disabled = true;
+
+        try {
+            // Call back-end to create a PaymentIntent
+            const response = await fetch(`${BACKEND_URL}/create-payment`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ document_hash: fileHash })
+            });
+            const { clientSecret } = await response.json();
+            
+            // Confirm payment with Stripe
+            const { paymentIntent, error } = await stripe.confirmCardPayment(clientSecret);
+            
+            if (error) {
+                setStatus('Payment failed: ' + error.message, 'error');
+                notarizeBtn.disabled = false;
+            } else if (paymentIntent.status === 'succeeded') {
+                setStatus('Payment successful! Processing notarization...', 'success');
+                // Proceed to notarize
+                await notarizeDocument();
+            }
+
+        } catch (error) {
+            setStatus('Payment process failed: ' + error.message, 'error');
+            notarizeBtn.disabled = false;
+        }
+    });
+
+    // --- Notarization Core Logic ---
+    async function notarizeDocument() {
+        const formData = new FormData();
+        formData.append('document', uploadedFile);
+        formData.append('name', uploadedFile.name);
+        
+        // Pass the user's email or ID from the authenticated session if needed
+        const { data: { user } } = await supabase.auth.getUser();
+        formData.append('email', user.email);
+
+        try {
+            const response = await fetch(`${BACKEND_URL}/notarize`, {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                resultsSection.style.display = 'block';
+                resultsInfoDiv.innerHTML = `
+                    <div class="status success">
+                        <p><strong>Notarization Complete!</strong></p>
+                        <p><strong>VeChain Transaction:</strong> <a href="${result.explorerUrl}" target="_blank">${result.vechainTx}</a></p>
+                        <p><strong>Document Hash:</strong> ${result.documentHash}</p>
+                        <p><strong>Document URL:</strong> <a href="${result.documentUrl}" target="_blank">View File</a></p>
+                    </div>
+                `;
+                setStatus('Notarization complete.', 'success');
+            } else {
+                throw new Error(result.details);
+            }
+        } catch (error) {
+            setStatus('Notarization failed: ' + error.message, 'error');
+        }
+    }
+
+    // --- Helper Functions ---
+    function setStatus(message, type) {
+        statusElement.textContent = `Status: ${message}`;
+        statusElement.className = `status ${type}`;
+    }
+
+    // Initial setup
+    async function initialize() {
+        try {
+            const response = await fetch(`${BACKEND_URL}/config`);
+            const config = await response.json();
+            stripe = Stripe(config.stripePublicKey);
+        } catch (error) {
+            setStatus('Failed to fetch Stripe config. Ensure your back-end is running.', 'error');
+            return;
+        }
+
+        checkAuth();
+        setStatus('Ready.', 'info');
+    }
+
+    initialize();
+</script>
+
+</body>
+</html>
