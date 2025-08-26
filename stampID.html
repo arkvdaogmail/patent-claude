@@ -3,359 +3,286 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Supabase Auth & Stripe Subscription</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <title>StampID | Final User Test</title>
+
     <script src="https://js.stripe.com/v3/"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f4f4f4;
-        }
-        .section {
-            background-color: white;
-            margin-bottom: 20px;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        input, button {
-            margin: 10px 0;
-            padding: 10px;
-            width: 100%;
-            box-sizing: border-box;
-        }
-        .subscription-options {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 20px;
-        }
-        .subscription-option {
-            border: 1px solid #ddd;
-            padding: 15px;
-            width: 30%;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .subscription-option.selected {
-            border-color: #007bff;
-            background-color: #f0f0ff;
-        }
-        #card-element {
-            background-color: white;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        #card-errors {
-            color: red;
-            margin-top: 10px;
-        }
+        :root { --primary-color: #2563eb; --primary-hover: #1d4ed8; --danger-color: #dc2626; --light-gray: #f4f7f9; --medium-gray: #e2e8f0; --dark-gray: #4b5563; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--light-gray); color: #333; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
+        .container { max-width: 600px; width: 100%; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); position: relative; }
+        h1, h2 { text-align: center; color: #1a202c; }
+        h1 { margin-bottom: 20px; }
+        h2 { margin-top: 30px; font-size: 1.2em; border-bottom: 1px solid var(--medium-gray); padding-bottom: 10px; }
+        section { display: none; margin-top: 20px; }
+        .status { padding: 12px; border-radius: 6px; margin-bottom: 20px; font-weight: 500; text-align: center; transition: background-color 0.3s; }
+        .status.info { background-color: #e0f2fe; color: #0c54a8; }
+        .status.success { background-color: #dcfce7; color: #166534; }
+        .status.error { background-color: #fee2e2; color: #991b1b; }
+        input[type="email"], input[type="password"] { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px 15px; border-radius: 6px; border: none; color: white; background-color: var(--primary-color); font-size: 16px; font-weight: bold; cursor: pointer; transition: background-color 0.2s; margin-top: 10px; }
+        button:hover:not(:disabled) { background-color: var(--primary-hover); }
+        button:disabled { background-color: #9ca3af; cursor: not-allowed; }
+        #signup-btn { background-color: var(--dark-gray); }
+        #signup-btn:hover:not(:disabled) { background-color: #334155; }
+        #signout-btn { position: absolute; top: 20px; right: 20px; width: auto; background: none; color: var(--danger-color); font-size: 14px; padding: 5px; font-weight: normal; }
+        #drop-zone { border: 2px dashed #ccc; border-radius: 8px; padding: 40px; text-align: center; cursor: pointer; color: #666; transition: background-color 0.2s, border-color 0.2s; }
+        #drop-zone.dragover { background-color: #e0f2fe; border-color: var(--primary-color); }
+        #fileInput { display: none; }
+        #file-info, #hash-info { background: var(--light-gray); padding: 15px; border-radius: 6px; border: 1px solid var(--medium-gray); margin-top: 15px; }
+        #hash-info { font-family: monospace; font-size: 12px; word-wrap: break-word; }
+        #payment-element { padding: 15px; border: 1px solid #ccc; border-radius: 6px; margin-bottom: 15px; }
+        #results-info a { color: var(--primary-color); font-weight: bold; text-decoration: none; }
+        #results-info a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
-    <!-- Authentication Section -->
-    <div id="auth-section" class="section">
-        <h2>Authentication</h2>
-        <div id="auth-forms">
-            <!-- Sign Up Form -->
-            <div id="signup-form">
-                <h3>Sign Up</h3>
-                <input type="email" id="signup-email" placeholder="Email">
-                <input type="password" id="signup-password" placeholder="Password">
-                <input type="text" id="full-name" placeholder="Full Name">
-                <button onclick="signUp()">Sign Up</button>
-            </div>
+    <div class="container">
+        <h1>StampID</h1>
+        <div id="status" class="status info">Initializing...</div>
+        <button id="signout-btn" style="display: none;">Sign Out</button>
 
-            <!-- Sign In Form -->
-            <div id="signin-form">
-                <h3>Sign In</h3>
-                <input type="email" id="signin-email" placeholder="Email">
-                <input type="password" id="signin-password" placeholder="Password">
-                <button onclick="signIn()">Sign In</button>
-            </div>
-        </div>
+        <section id="auth-section">
+            <h2>1. Sign In / Sign Up</h2>
+            <input type="email" id="email" placeholder="Enter your email" required>
+            <input type="password" id="password" placeholder="Enter your password" required>
+            <button id="login-btn">Sign In</button>
+            <button id="signup-btn">Sign Up</button>
+        </section>
+
+        <section id="upload-section">
+            <h2>2. Upload Document</h2>
+            <div id="drop-zone"><strong>Drag & Drop file here</strong><br> or click to select</div>
+            <input type="file" id="fileInput">
+            <div id="file-info"></div>
+            <div id="hash-info" style="display: none;"></div>
+        </section>
+
+        <section id="payment-section">
+            <h2>3. Create Proof ($1.99)</h2>
+            <div id="payment-element"></div>
+            <button id="notarize-btn">Pay & Notarize</button>
+        </section>
+
+        <section id="results-section">
+            <h2>4. Your Proof Is Ready</h2>
+            <div id="results-info"></div>
+            <button id="start-over-btn">Notarize Another File</button>
+        </section>
     </div>
 
-    <!-- Subscription Section -->
-    <div id="subscription-section" class="section" style="display:none;">
-        <h2>Choose Your Subscription</h2>
+<script>
+// =================================================================================
+// === CONFIGURATION ===
+// =================================================================================
+const CONFIG = {
+    // ⚠️ ACTION REQUIRED: PASTE YOUR SUPABASE KEYS HERE
+    SUPABASE_URL: 'YOUR_SUPABASE_URL',
+    SUPABASE_ANON_KEY: 'YOUR_SUPABASE_ANON_KEY',
+    
+    // This should point to your running back-end server
+    BACKEND_URL: "http://localhost:3000",
+};
+// =================================================================================
+
+// === STATE ===
+const state = {
+    user: null,
+    file: null,
+    hash: null,
+    isBusy: false,
+    stripe: null,
+    cardElement: null,
+};
+
+// === DOM ELEMENTS ===
+const dom = {};
+document.addEventListener('DOMContentLoaded', () => {
+    const ids = ['status', 'signout-btn', 'auth-section', 'email', 'password', 'login-btn', 'signup-btn', 'upload-section', 'drop-zone', 'fileInput', 'file-info', 'hash-info', 'payment-section', 'payment-element', 'notarize-btn', 'results-section', 'results-info', 'start-over-btn'];
+    ids.forEach(id => dom[id] = document.getElementById(id));
+    
+    initialize();
+});
+
+// === UI MANAGEMENT ===
+function setStatus(message, type = 'info') {
+    dom.status.textContent = message;
+    dom.status.className = `status ${type}`;
+}
+
+function setBusy(busyState, button) {
+    state.isBusy = busyState;
+    if (button) {
+        button.disabled = busyState;
+        if (busyState) {
+            button.dataset.originalText = button.textContent;
+            button.textContent = 'Processing...';
+        } else {
+            button.textContent = button.dataset.originalText;
+        }
+    }
+}
+
+function updateUI() {
+    const { user, file, hash } = state;
+    dom['signout-btn'].style.display = user ? 'block' : 'none';
+    
+    const show = (section) => {
+        ['auth-section', 'upload-section', 'payment-section', 'results-section'].forEach(s => dom[s].style.display = 'none');
+        if (dom[section]) dom[section].style.display = 'block';
+    };
+
+    if (!user) return show('auth-section');
+    if (user && !file) {
+        // Reset file info for new uploads
+        dom['file-info'].innerHTML = '';
+        dom['hash-info'].style.display = 'none';
+        return show('upload-section');
+    }
+    if (user && file && !hash) return show('upload-section'); // Hashing in progress
+    if (user && file && hash) return show('payment-section');
+}
+
+// === ERROR HANDLING ===
+function handleError(error, userMessage = 'An unexpected error occurred.') {
+    console.error('[STAMPID_ERROR]', error);
+    setStatus(userMessage, 'error');
+    setBusy(false, document.querySelector('button:disabled')); // Re-enable any busy button
+}
+
+// === AUTHENTICATION ===
+async function checkAuth() {
+    const { data: { session } } = await sb.auth.getSession();
+    state.user = session ? session.user : null;
+    updateUI();
+}
+
+async function handleAuth(type) {
+    if (state.isBusy) return;
+    const button = (type === 'signin') ? dom['login-btn'] : dom['signup-btn'];
+    setBusy(true, button);
+
+    try {
+        const email = dom.email.value;
+        const password = dom.password.value;
+        if (!email || !password) throw new Error('Email and password are required.');
         
-        <!-- User Profile -->
-        <div id="user-profile">
-            <p>Welcome, <span id="user-email"></span>!</p>
-        </div>
-
-        <!-- Subscription Tiers -->
-        <div class="subscription-options">
-            <div class="subscription-option" data-plan="basic" onclick="selectPlan(this)">
-                <h3>Basic</h3>
-                <p>$9.99/month</p>
-            </div>
-            <div class="subscription-option" data-plan="pro" onclick="selectPlan(this)">
-                <h3>Pro</h3>
-                <p>$19.99/month</p>
-            </div>
-            <div class="subscription-option" data-plan="enterprise" onclick="selectPlan(this)">
-                <h3>Enterprise</h3>
-                <p>$49.99/month</p>
-            </div>
-        </div>
-
-        <!-- Payment Form -->
-        <form id="payment-form">
-            <!-- Stripe Card Element -->
-            <div class="form-group">
-                <label>Card Details</label>
-                <div id="card-element"></div>
-                <div id="card-errors" role="alert"></div>
-            </div>
-
-            <!-- Billing Address -->
-            <div class="form-group">
-                <label for="address">Billing Address</label>
-                <input type="text" id="address" name="address" required>
-            </div>
-
-            <div class="form-group">
-                <label for="city">City</label>
-                <input type="text" id="city" name="city" required>
-            </div>
-
-            <button type="submit" id="submit-button" disabled>Subscribe Now</button>
-        </form>
-
-        <!-- Existing Subscriptions -->
-        <div id="existing-subscriptions">
-            <h3>Your Subscriptions</h3>
-            <div id="subscriptions-list"></div>
-        </div>
-    </div>
-
-    <script>
-        // Supabase Configuration
-        const supabase = window.supabase.createClient(
-            'YOUR_SUPABASE_URL', 
-            'YOUR_SUPABASE_ANON_KEY'
-        );
-
-        // Stripe Configuration
-        const stripe = Stripe('YOUR_STRIPE_PUBLISHABLE_KEY');
-        const elements = stripe.elements();
-
-        // Create Card Element
-        const cardElement = elements.create('card', {
-            style: {
-                base: {
-                    fontSize: '16px',
-                    color: '#32325d',
-                }
-            }
-        });
-        cardElement.mount('#card-element');
-
-        let currentUser = null;
-        let selectedPlan = null;
-
-        // Authentication Functions
-        async function signUp() {
-            const email = document.getElementById('signup-email').value;
-            const password = document.getElementById('signup-password').value;
-            const fullName = document.getElementById('full-name').value;
-
-            const { data, error } = await supabase.auth.signUp({
-                email,
-                password,
-                options: {
-                    data: {
-                        full_name: fullName
-                    }
-                }
-            });
-
-            if (data.user) {
-                alert('Sign Up Successful! Please check your email to verify.');
-            } else {
-                alert('Sign Up Failed: ' + error.message);
-            }
-        }
-
-        async function signIn() {
-            const email = document.getElementById('signin-email').value;
-            const password = document.getElementById('signin-password').value;
-
-            const { data, error } = await supabase.auth.signInWithPassword({
-                email,
-                password
-            });
-
-            if (data.user) {
-                currentUser = data.user;
-                updateUIAfterAuth();
-            } else {
-                alert('Sign In Failed: ' + error.message);
-            }
-        }
-
-        // Plan Selection Function
-        function selectPlan(planElement) {
-            // Remove selected class from all plans
-            document.querySelectorAll('.subscription-option').forEach(el => {
-                el.classList.remove('selected');
-            });
-
-            // Add selected class to clicked plan
-            planElement.classList.add('selected');
-            selectedPlan = planElement.dataset.plan;
-
-            // Enable submit button
-            document.getElementById('submit-button').disabled = false;
-        }
-
-        // Update UI After Authentication
-        function updateUIAfterAuth() {
-            const authSection = document.getElementById('auth-section');
-            const subscriptionSection = document.getElementById('subscription-section');
-
-            if (currentUser) {
-                authSection.style.display = 'none';
-                subscriptionSection.style.display = 'block';
-                document.getElementById('user-email').textContent = currentUser.email;
-                
-                // Load existing subscriptions
-                loadExistingSubscriptions();
-            } else {
-                authSection.style.display = 'block';
-                subscriptionSection.style.display = 'none';
-            }
-        }
-
-        // Load Existing Subscriptions
-        async function loadExistingSubscriptions() {
-            const { data, error } = await supabase
-                .from('subscriptions')
-                .select('*')
-                .eq('user_id', currentUser.id);
-
-            const subscriptionsList = document.getElementById('subscriptions-list');
-            subscriptionsList.innerHTML = ''; // Clear previous list
-
-            if (data && data.length > 0) {
-                data.forEach(subscription => {
-                    const subscriptionElement = document.createElement('div');
-                    subscriptionElement.innerHTML = `
-                        <p>Plan: ${subscription.plan}</p>
-                        <p>Status: ${subscription.status}</p>
-                        <p>Subscribed on: ${new Date(subscription.created_at).toLocaleDateString()}</p>
-                    `;
-                    subscriptionsList.appendChild(subscriptionElement);
-                });
-            } else {
-                subscriptionsList.innerHTML = '<p>No active subscriptions</p>';
-            }
-        }
-
-        // Payment Form Submission
-        document.getElementById('payment-form').addEventListener('submit', async function(event) {
-            event.preventDefault();
-
-            // Disable submit button
-            const submitButton = document.getElementById('submit-button');
-            submitButton.disabled = true;
-            submitButton.textContent = 'Processing...';
-
-            // Collect Billing Details
-            const billingDetails = {
-                name: currentUser.user_metadata.full_name,
-                email: currentUser.email,
-                address: {
-                    line1: document.getElementById('address').value,
-                    city: document.getElementById('city').value,
-                }
-            };
-
-            try {
-                // Create Payment Method
-                const { paymentMethod, error } = await stripe.createPaymentMethod({
-                    type: 'card',
-                    card: cardElement,
-                    billing_details: billingDetails
-                });
-
-                if (error) {
-                    throw new Error(error.message);
-                }
-
-                // Call server to create subscription
-                const response = await fetch('/functions/stripe-subscription', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        userId: currentUser.id,
-                        email: currentUser.email,
-                        paymentMethodId: paymentMethod.id,
-                        plan: selectedPlan
-                    })
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    // Save subscription to Supabase
-                    const { data, error } = await supabase
-                        .from('subscriptions')
-                        .insert({
-                            user_id: currentUser.id,
-                            stripe_customer_id: result.customerId,
-                            stripe_subscription_id: result.subscriptionId,
-                            plan: selectedPlan,
-                            status: 'active'
-                        });
-
-                    if (error) {
-                        throw error;
-                    }
-
-                    alert('Subscription created successfully!');
-                    loadExistingSubscriptions();
-                } else {
-                    throw new Error(result.error);
-                }
-            } catch (error) {
-                console.error('Subscription Error:', error);
-                alert('Subscription failed: ' + error.message);
-            } finally {
-                submitButton.disabled = false;
-                submitButton.textContent = 'Subscribe Now';
-            }
-        });
-
-        // Initial Authentication Check
-        document.addEventListener('DOMContentLoaded', async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            
-            if (session) {
-                currentUser = session.user;
-                updateUIAfterAuth();
-            }
-        });
-
-        // Handle Card Element Changes
-        cardElement.addEventListener('change', function(event) {
-            const displayError = document.getElementById('card-errors');
-            if (event.error) {
-                displayError.textContent = event.error.message;
-            } else {
-                displayError.textContent = '';
-            }
-        });
-    </script>
-</body>
-</html>
-
+        const method = type === 'signin' ? sb.auth.signInWithPassword : sb.auth.signUp;
+        const { error } = await method({ email, password });
+        if (error) throw error;
         
+        setStatus('Authentication successful!', 'success');
+        checkAuth();
+    } catch (error) {
+        handleError(error, error.message);
+    } finally {
+        setBusy(false, button);
+    }
+}
+
+async function signOut() {
+    await sb.auth.signOut();
+    state.user = null;
+    state.file = null;
+    state.hash = null;
+    setStatus('You have been signed out.', 'info');
+    updateUI();
+}
+
+// === FILE & HASHING ===
+async function handleFile(file) {
+    if (!file) return;
+    state.file = file;
+    state.hash = null;
+    dom['file-info'].innerHTML = `<strong>File:</strong> ${file.name} | <strong>Size:</strong> ${(file.size / 1024 / 1024).toFixed(2)} MB`;
+    dom['hash-info'].style.display = 'none';
+    setStatus('Generating cryptographic hash...', 'info');
+
+    try {
+        const buffer = await file.arrayBuffer();
+        const digest = await crypto.subtle.digest('SHA-256', buffer);
+        state.hash = Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
+        
+        dom['hash-info'].style.display = 'block';
+        dom['hash-info'].textContent = `SHA-256: ${state.hash}`;
+        setStatus('Hash generated. Ready for payment.', 'success');
+        updateUI();
+        initializeStripe();
+    } catch (error) {
+        handleError(error, 'Failed to generate file hash.');
+    }
+}
+
+// === PAYMENT & NOTARIZATION ===
+async function initializeStripe() {
+    if (state.stripe) return;
+    try {
+        const res = await fetch(`${CONFIG.BACKEND_URL}/config`);
+        const { stripePublicKey } = await res.json();
+        state.stripe = Stripe(stripePublicKey);
+        const elements = state.stripe.elements();
+        state.cardElement = elements.create('card');
+        state.cardElement.mount(dom['payment-element']);
+    } catch (error) {
+        handleError(error, 'Could not connect to payment system. Is the server running?');
+    }
+}
+
+async function processNotarization() {
+    if (state.isBusy || !state.stripe) return;
+    setBusy(true, dom['notarize-btn']);
+
+    try {
+        // 1. Create Payment Intent from our backend
+        setStatus('Contacting payment server...', 'info');
+        const paymentRes = await fetch(`${CONFIG.BACKEND_URL}/create-payment`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ document_hash: state.hash })
+        });
+        const { clientSecret, error: intentError } = await paymentRes.json();
+        if (intentError || !clientSecret) throw new Error(intentError || 'Failed to create payment intent.');
+
+        // 2. Confirm card payment with Stripe
+        setStatus('Please confirm payment...', 'info');
+        const { paymentIntent, error: paymentError } = await state.stripe.confirmCardPayment(clientSecret, {
+            payment_method: { card: state.cardElement }
+        });
+        if (paymentError) throw new Error(paymentError.message);
+        if (paymentIntent.status !== 'succeeded') throw new Error('Payment was not successful.');
+
+        // 3. Send file to backend for notarization
+        setStatus('Payment successful! Creating proof on VeChain...', 'success');
+        const formData = new FormData();
+        formData.append('document', state.file);
+        formData.append('document_hash', state.hash);
+        const notarizeRes = await fetch(`${CONFIG.BACKEND_URL}/notarize`, { method: 'POST', body: formData });
+        const result = await notarizeRes.json();
+        if (!result.success) throw new Error(result.details || 'Notarization failed on the server.');
+
+        // 4. Display results (the "look up")
+        dom['results-info'].innerHTML = `
+            <div class="status success">
+                <p><strong>✅ Proof Created Successfully!</strong></p>
+                <p><strong>VeChain Transaction:</strong> <a href="${result.explorerUrl}" target="_blank" rel="noopener noreferrer">${result.vechainTx}</a></p>
+                <p><strong>Block Number:</strong> ${result.blockNumber}</p>
+                <p><strong>Document Hash:</strong> <code style="font-size:14px;">${result.documentHash}</code></p>
+            </div>
+        `;
+        dom['payment-section'].style.display = 'none';
+        dom['results-section'].style.display = 'block';
+        setStatus('Process Complete!', 'success');
+
+    } catch (error) {
+        handleError(error, error.message);
+    } finally {
+        setBusy(false, dom['notarize-btn']);
+    }
+}
+
+// === INITIALIZATION ===
+function setupEventListeners() {
+    dom['login-btn'].addEventListener('click', () => handleAuth('signin'));
+    dom['signup-btn'].addEventListener('click', () => handleAuth('signup'));
+    dom['signout-
