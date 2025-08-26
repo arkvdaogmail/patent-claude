@@ -1,260 +1,212 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>StampID - Integrated Test</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://js.stripe.com/v3/"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" referrerpolicy="no-referrer"/>
-  <style>
-    body { font-family: sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; background-color: #f4f7f9; }
-    .container { background-color: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-    .section { margin-bottom: 25px; padding: 15px; border-radius: 6px; border: 1px solid #e0e0e0; }
-    h2 { border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-top: 0; color: #333; }
-    input[type="email"], input[type="password"], input[type="file"] { display: block; width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; }
-    .btn { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; color: white; margin-top: 10px; }
-    .btn-primary { background-color: #007bff; }
-    .btn-success { background-color: #28a745; }
-    .btn-disabled { background-color: #6c757d; cursor: not-allowed; }
-    .status { margin-top: 15px; padding: 12px; border-radius: 4px; }
-    .success { background-color: #d4edda; color: #155724; }
-    .error { background-color: #f8d7da; color: #721c24; }
-    .info { background-color: #d1ecf1; color: #0c5460; }
-    .drop-zone { border: 2px dashed #007bff; padding: 25px; text-align: center; border-radius: 8px; margin-top: 10px; cursor: pointer; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>StampID: Proof of Anything</h1>
-    <div id="status" class="status info">Status: Initializing...</div>
+<script>
+  const BACKEND_URL = "http://localhost:3000";
+  const SUPABASE_URL = "https://mfrefbmnxygeahaluhzr.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1mcmVmYm1ueHlnZWFoYWx1aHpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI1NDIxOTUsImV4cCI6MjA2ODExODE5NX0.Ur3hl7rVEWk6U-ydNbKymFmXtxUlx6RTn0pU0EnP7u0";
 
-    <div id="auth-section" class="section">
-      <h2>1. Log In</h2>
-      <p>Log in with your Supabase account.</p>
-      <input type="email" id="email" placeholder="Email" required />
-      <input type="password" id="password" placeholder="Password" required />
-      <button class="btn btn-primary" onclick="loginUser()">Log In / Sign Up</button>
-    </div>
+  // Optional: put your Stripe publishable key here to bypass /config while testing
+  const MANUAL_STRIPE_KEY = ""; // e.g. "pk_test_123..." or leave "" to use /config
 
-    <div id="upload-section" class="section" style="display: none;">
-      <h2>2. Upload & Hash</h2>
-      <p>Drag and drop a file or click to select.</p>
-      <div id="drop-zone" class="drop-zone">
-        <i class="fas fa-cloud-upload-alt" style="font-size: 24px; color: #007bff;"></i>
-        <p>Drag a file here or browse</p>
-        <input type="file" id="fileInput" hidden />
-      </div>
-      <div id="file-info" style="margin-top: 15px;"></div>
-      <div id="hash-info" class="status info" style="display: none;"></div>
-    </div>
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    <div id="payment-section" class="section" style="display: none;">
-      <h2>3. Secure Notarization</h2>
-      <p>Finalize your proof with a secure payment.</p>
-      <div id="payment-element"></div>
-      <button id="notarize-btn" class="btn btn-success" disabled>Pay $4.99 & Notarize</button>
-    </div>
+  let stripe, elements, cardElement;
 
-    <div id="results-section" class="section" style="display: none;">
-      <h2>4. Your Notarized Proof</h2>
-      <div id="results-info" class="status info"></div>
-    </div>
-  </div>
+  const statusElement = document.getElementById('status');
+  const authSection = document.getElementById('auth-section');
+  const uploadSection = document.getElementById('upload-section');
+  const paymentSection = document.getElementById('payment-section');
+  const paymentElementContainer = document.getElementById('payment-element');
+  const notarizeBtn = document.getElementById('notarize-btn');
+  const fileInput = document.getElementById('fileInput');
+  const dropZone = document.getElementById('drop-zone');
+  const fileInfoDiv = document.getElementById('file-info');
+  const hashInfoDiv = document.getElementById('hash-info');
+  const resultsSection = document.getElementById('results-section');
+  const resultsInfoDiv = document.getElementById('results-info');
 
-  <script>
-    // Config
-    const BACKEND_URL = "http://localhost:3000";
-    const SUPABASE_URL = "https://mfrefbmnxygeahaluhzr.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1mcmVmYm1ueHlnZWFoYWx1aHpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI1NDIxOTUsImV4cCI6MjA2ODExODE5NX0.Ur3hl7rVEWk6U-ydNbKymFmXtxUlx6RTn0pU0EnP7u0";
+  let uploadedFile = null;
+  let fileHash = null;
 
-    // Initialize Supabase (avoid shadowing the global)
-    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  function setStatus(message, type) {
+    statusElement.textContent = `Status: ${message}`;
+    statusElement.className = `status ${type}`;
+  }
 
-    // Stripe
-    let stripe, elements, cardElement;
+  async function checkAuth() {
+    const { data: { user } } = await sb.auth.getUser();
+    if (user) {
+      setStatus('Authenticated. You can upload files now.', 'success');
+      authSection.style.display = 'none';
+      uploadSection.style.display = 'block';
+    } else {
+      setStatus('Please log in to continue.', 'info');
+    }
+  }
 
-    // DOM
-    const statusElement = document.getElementById('status');
-    const authSection = document.getElementById('auth-section');
-    const uploadSection = document.getElementById('upload-section');
-    const paymentSection = document.getElementById('payment-section');
-    const resultsSection = document.getElementById('results-section');
-    const fileInput = document.getElementById('fileInput');
-    const dropZone = document.getElementById('drop-zone');
-    const fileInfoDiv = document.getElementById('file-info');
-    const hashInfoDiv = document.getElementById('hash-info');
-    const notarizeBtn = document.getElementById('notarize-btn');
-    const resultsInfoDiv = document.getElementById('results-info');
-    const paymentElementContainer = document.getElementById('payment-element');
-
-    let uploadedFile = null;
-    let fileHash = null;
-
-    // Auth
-    async function checkAuth() {
-      const { data: { user } } = await sb.auth.getUser();
-      if (user) {
-        setStatus('Authenticated. You can upload files now.', 'success');
-        authSection.style.display = 'none';
-        uploadSection.style.display = 'block';
-      } else {
-        setStatus('Please log in to continue.', 'info');
+  async function loginUser() {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    try {
+      let { data, error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) {
+        const { data: signUpData, error: signUpError } = await sb.auth.signUp({ email, password });
+        if (signUpError) throw signUpError;
+        data = signUpData;
       }
+      setStatus(`Logged in as ${data.user.email}.`, 'success');
+      checkAuth();
+    } catch (err) {
+      setStatus('Authentication failed: ' + err.message, 'error');
+    }
+  }
+  window.loginUser = loginUser;
+
+  dropZone.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+
+  function handleFile(file) {
+    if (!file) return;
+    uploadedFile = file;
+    fileInfoDiv.innerHTML = `<strong>File:</strong> ${file.name} | <strong>Size:</strong> ${(file.size/1024/1024).toFixed(2)} MB`;
+    setStatus('Generating cryptographic hash...', 'info');
+    notarizeBtn.disabled = true;
+
+    getFileHash(uploadedFile).then(hash => {
+      fileHash = hash;
+      hashInfoDiv.style.display = 'block';
+      hashInfoDiv.textContent = `SHA-256 Hash: ${hash}`;
+      setStatus('Hash generated successfully.', 'success');
+      paymentSection.style.display = 'block';
+      notarizeBtn.disabled = false;
+    }).catch(err => setStatus('Failed to generate hash: ' + err.message, 'error'));
+  }
+
+  async function getFileHash(file) {
+    const buffer = await file.arrayBuffer();
+    const digest = await crypto.subtle.digest('SHA-256', buffer);
+    return [...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,'0')).join('');
+  }
+
+  async function ensureStripeReady() {
+    if (stripe) return; // already ready
+
+    if (MANUAL_STRIPE_KEY) {
+      stripe = Stripe(MANUAL_STRIPE_KEY);
+      elements = stripe.elements();
+      cardElement = elements.create('card');
+      cardElement.mount(paymentElementContainer);
+      return;
     }
 
-    async function loginUser() {
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
-
-      try {
-        let { data, error } = await sb.auth.signInWithPassword({ email, password });
-        if (error) {
-          const { data: signUpData, error: signUpError } = await sb.auth.signUp({ email, password });
-          if (signUpError) throw signUpError;
-          data = signUpData;
-        }
-        setStatus(`Logged in as ${data.user.email}.`, 'success');
-        checkAuth();
-      } catch (error) {
-        setStatus('Authentication failed: ' + error.message, 'error');
+    // Try fetching from back-end /config with detailed error report
+    try {
+      const res = await fetch(`${BACKEND_URL}/config`);
+      if (!res.ok) {
+        const body = await res.text().catch(()=>'(no body)');
+        throw new Error(`GET /config ${res.status} ${res.statusText}. Body: ${body}`);
       }
+      const cfg = await res.json();
+      if (!cfg.stripePublicKey) throw new Error('stripePublicKey missing in /config response');
+      stripe = Stripe(cfg.stripePublicKey);
+      elements = stripe.elements();
+      cardElement = elements.create('card');
+      cardElement.mount(paymentElementContainer);
+    } catch (err) {
+      console.error('Stripe config error:', err);
+      setStatus('Failed to fetch Stripe config. ' + err.message, 'error');
+      throw err; // propagate so payment step halts
+    }
+  }
+
+  notarizeBtn.addEventListener('click', async () => {
+    if (!uploadedFile || !fileHash) {
+      setStatus('Please upload and hash a file first.', 'info');
+      return;
     }
 
-    // File Handling & Hashing
-    dropZone.addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+    try {
+      await ensureStripeReady();
+    } catch {
+      return; // status already shown
+    }
 
-    function handleFile(file) {
-      if (!file) return;
-      uploadedFile = file;
+    setStatus('Initiating payment...', 'info');
+    notarizeBtn.disabled = true;
 
-      fileInfoDiv.innerHTML = `<strong>File:</strong> ${file.name} | <strong>Size:</strong> ${(file.size / 1024 / 1024).toFixed(2)} MB`;
-
-      setStatus('Generating cryptographic hash...', 'info');
-      notarizeBtn.disabled = true;
-
-      getFileHash(uploadedFile).then(hash => {
-        fileHash = hash;
-        hashInfoDiv.style.display = 'block';
-        hashInfoDiv.textContent = `SHA-256 Hash: ${hash}`;
-        setStatus('Hash generated successfully.', 'success');
-
-        // Show payment section and enable button
-        paymentSection.style.display = 'block';
-        notarizeBtn.disabled = false;
-      }).catch(error => {
-        setStatus('Failed to generate hash: ' + error.message, 'error');
+    try {
+      const resp = await fetch(`${BACKEND_URL}/create-payment`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ document_hash: fileHash })
       });
-    }
-
-    async function getFileHash(file) {
-      const buffer = await file.arrayBuffer();
-      const digest = await crypto.subtle.digest('SHA-256', buffer);
-      const hex = [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, '0')).join('');
-      return hex;
-    }
-
-    // Payment
-    notarizeBtn.addEventListener('click', async () => {
-      if (!uploadedFile || !fileHash) {
-        setStatus('Please upload and hash a file first.', 'info');
-        return;
+      if (!resp.ok) {
+        const body = await resp.text().catch(()=>'(no body)');
+        throw new Error(`POST /create-payment ${resp.status} ${resp.statusText}. Body: ${body}`);
       }
+      const { clientSecret } = await resp.json();
+      if (!clientSecret) throw new Error('clientSecret missing from /create-payment');
 
-      setStatus('Initiating payment...', 'info');
-      notarizeBtn.disabled = true;
+      const { paymentIntent, error } = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: { card: cardElement }
+      });
 
-      try {
-        // Create PaymentIntent
-        const response = await fetch(`${BACKEND_URL}/create-payment`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ document_hash: fileHash })
-        });
-        const { clientSecret } = await response.json();
-
-        // Confirm card payment with mounted Card Element
-        const { paymentIntent, error } = await stripe.confirmCardPayment(clientSecret, {
-          payment_method: { card: cardElement }
-        });
-
-        if (error) {
-          setStatus('Payment failed: ' + error.message, 'error');
-          notarizeBtn.disabled = false;
-        } else if (paymentIntent && paymentIntent.status === 'succeeded') {
-          setStatus('Payment successful! Processing notarization...', 'success');
-          await notarizeDocument();
-        } else {
-          setStatus('Payment did not complete.', 'error');
-          notarizeBtn.disabled = false;
-        }
-      } catch (error) {
-        setStatus('Payment process failed: ' + error.message, 'error');
+      if (error) {
+        setStatus('Payment failed: ' + error.message, 'error');
         notarizeBtn.disabled = false;
+        return;
       }
-    });
-
-    // Notarization
-    async function notarizeDocument() {
-      const formData = new FormData();
-      formData.append('document', uploadedFile);
-      formData.append('name', uploadedFile.name);
-
-      const { data: { user } } = await sb.auth.getUser();
-      if (user && user.email) formData.append('email', user.email);
-
-      try {
-        const response = await fetch(`${BACKEND_URL}/notarize`, { method: 'POST', body: formData });
-        const result = await response.json();
-
-        if (result.success) {
-          resultsSection.style.display = 'block';
-          resultsInfoDiv.innerHTML = `
-            <div class="status success">
-              <p><strong>Notarization Complete!</strong></p>
-              <p><strong>VeChain Transaction:</strong> <a href="${result.explorerUrl}" target="_blank">${result.vechainTx}</a></p>
-              <p><strong>Document Hash:</strong> ${result.documentHash}</p>
-              <p><strong>Document URL:</strong> <a href="${result.documentUrl}" target="_blank">View File</a></p>
-            </div>
-          `;
-          setStatus('Notarization complete.', 'success');
-        } else {
-          throw new Error(result.details || 'Unknown error');
-        }
-      } catch (error) {
-        setStatus('Notarization failed: ' + error.message, 'error');
-      }
-    }
-
-    // Helpers
-    function setStatus(message, type) {
-      statusElement.textContent = `Status: ${message}`;
-      statusElement.className = `status ${type}`;
-    }
-
-    // Initialize
-    async function initialize() {
-      try {
-        const response = await fetch(`${BACKEND_URL}/config`);
-        const config = await response.json();
-        stripe = Stripe(config.stripePublicKey);
-
-        // Mount Stripe Card Element once Stripe is ready
-        elements = stripe.elements();
-        cardElement = elements.create('card');
-        cardElement.mount(paymentElementContainer);
-      } catch (error) {
-        setStatus('Failed to fetch Stripe config. Ensure your back-end is running.', 'error');
+      if (!paymentIntent || paymentIntent.status !== 'succeeded') {
+        setStatus('Payment did not complete.', 'error');
+        notarizeBtn.disabled = false;
         return;
       }
 
-      await checkAuth();
-      setStatus('Ready.', 'info');
+      setStatus('Payment successful! Processing notarization...', 'success');
+      await notarizeDocument();
+    } catch (err) {
+      console.error('Payment error:', err);
+      setStatus('Payment process failed: ' + err.message, 'error');
+      notarizeBtn.disabled = false;
     }
+  });
 
-    initialize();
-  </script>
-</body>
-</html>
+  async function notarizeDocument() {
+    const formData = new FormData();
+    formData.append('document', uploadedFile);
+    formData.append('name', uploadedFile.name);
+    const { data: { user } } = await sb.auth.getUser();
+    if (user?.email) formData.append('email', user.email);
+
+    try {
+      const response = await fetch(`${BACKEND_URL}/notarize`, { method: 'POST', body: formData });
+      if (!response.ok) {
+        const body = await response.text().catch(()=>'(no body)');
+        throw new Error(`POST /notarize ${response.status} ${response.statusText}. Body: ${body}`);
+      }
+      const result = await response.json();
+      if (!result.success) throw new Error(result.details || 'Unknown error');
+
+      resultsSection.style.display = 'block';
+      resultsInfoDiv.innerHTML = `
+        <div class="status success">
+          <p><strong>Notarization Complete!</strong></p>
+          <p><strong>VeChain Transaction:</strong> <a href="${result.explorerUrl}" target="_blank">${result.vechainTx}</a></p>
+          <p><strong>Document Hash:</strong> ${result.documentHash}</p>
+          <p><strong>Document URL:</strong> <a href="${result.documentUrl}" target="_blank">View File</a></p>
+        </div>
+      `;
+      setStatus('Notarization complete.', 'success');
+    } catch (err) {
+      console.error('Notarize error:', err);
+      setStatus('Notarization failed: ' + err.message, 'error');
+    }
+  }
+
+  async function initialize() {
+    // Do not block the app on Stripe config; auth/upload can work first
+    await checkAuth();
+    setStatus('Ready.', 'info');
+  }
+
+  initialize();
+</script>
 
